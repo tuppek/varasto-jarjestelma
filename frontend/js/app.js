@@ -54,6 +54,8 @@ let ordersFulfillmentFilter = "";
 let ordersList = [];
 let customersSearchTimer = null;
 let activeCamera = null;
+let scanDebounceTimer = null;
+let scanProcessing = false;
 
 async function stopCamera() {
   if (!activeCamera) return;
@@ -111,6 +113,34 @@ async function toggleScanViewCamera() {
   await toggleCameraFor("camera-reader", "camera-toggle-btn", async (decoded) => {
     document.getElementById("scan-input").value = decoded;
     await handleScanSearch();
+  });
+}
+
+function resetScanView() {
+  clearTimeout(scanDebounceTimer);
+  scanProcessing = false;
+  const input = document.getElementById("scan-input");
+  if (input) {
+    input.value = "";
+    input.focus();
+  }
+  const result = document.getElementById("scan-result");
+  if (result) result.innerHTML = "";
+}
+
+function setupAutoScanInput(inputEl, onScan) {
+  if (!inputEl || inputEl.dataset.autoScanBound) return;
+  inputEl.dataset.autoScanBound = "1";
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onScan();
+    }
+  });
+  inputEl.addEventListener("input", () => {
+    clearTimeout(scanDebounceTimer);
+    if (!inputEl.value.trim()) return;
+    scanDebounceTimer = setTimeout(onScan, 200);
   });
 }
 
@@ -596,7 +626,7 @@ async function saveUnknownProduct(sku, context) {
     closeModal();
     showToast(`Tuote ${product.name} tallennettu`);
     if (context === "scan") {
-      renderScanResult(product);
+      openProductDetailModal(product.id);
     } else if (typeof window._unknownProductOnSaved === "function") {
       window._unknownProductOnSaved(product);
       window._unknownProductOnSaved = null;
@@ -628,27 +658,36 @@ function addProductToOrderLine(productId) {
 }
 
 async function handleScanSearch() {
-  const sku = document.getElementById("scan-input").value.trim();
-  if (!sku) return;
+  const input = document.getElementById("scan-input");
+  const sku = input?.value.trim();
+  if (!sku || scanProcessing) return;
+  scanProcessing = true;
+  clearTimeout(scanDebounceTimer);
   try {
     await handleProductScan(
       sku,
       (product) => {
-        renderScanResult(product);
+        if (input) input.value = "";
         showToast(`Löytyi: ${product.name}`);
+        openProductDetailModal(product.id);
       },
       (code) => {
-        renderUnknownScanResult(code);
-        showToast("Tuotetta ei löydy – voit tallentaa sen", "error");
+        if (input) input.value = "";
+        openUnknownProductModal(code, "scan");
       }
     );
   } catch (err) {
-    document.getElementById("scan-result").innerHTML = `<p class="login-error">${err.message}</p>`;
+    const result = document.getElementById("scan-result");
+    if (result) result.innerHTML = `<p class="login-error">${err.message}</p>`;
+  } finally {
+    scanProcessing = false;
+    input?.focus();
   }
 }
 
 async function renderScan() {
-  document.getElementById("scan-input").focus();
+  resetScanView();
+  setupAutoScanInput(document.getElementById("scan-input"), handleScanSearch);
 }
 
 function customerOptionsHtml(selectedId) {
@@ -1000,6 +1039,7 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
        <label>Skannaa tuote (SKU)</label>
        <div class="scan-input-wrap scan-input-wrap-modal">
          <input type="text" id="so-scan" class="scan-input" placeholder="Skannaa viivakoodi...">
+         <button type="button" class="btn btn-secondary btn-sm" id="so-scan-cancel">Peruuta</button>
        </div>
        <div id="so-camera-reader" class="camera-reader camera-reader-modal hidden"></div>
        <button type="button" class="btn btn-secondary btn-sm" id="so-camera-toggle-btn">Käynnistä kamera</button>
@@ -1023,23 +1063,44 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
   }
   const scanInput = document.getElementById("so-scan");
   if (preselectedSku) scanInput.value = preselectedSku;
-  scanInput.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      try {
-        await processOrderScan();
-      } catch (err) {
-        showToast(err.message, "error");
-      }
+
+  async function processOrderScanFromInput() {
+    const sku = scanInput.value.trim();
+    if (!sku || scanProcessing) return;
+    scanProcessing = true;
+    try {
+      await handleProductScan(
+        sku,
+        (p) => {
+          addProductToOrderLine(p.id);
+          scanInput.value = "";
+          showToast(`Lisätty: ${p.name}`);
+        },
+        (code) => {
+          openUnknownProductModal(code, "order", (product) => {
+            addProductToOrderLine(product.id);
+            scanInput.value = "";
+            showToast(`Lisätty: ${product.name}`);
+          });
+        }
+      );
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      scanProcessing = false;
+      scanInput.focus();
     }
+  }
+
+  setupAutoScanInput(scanInput, processOrderScanFromInput);
+  document.getElementById("so-scan-cancel").addEventListener("click", () => {
+    scanInput.value = "";
+    scanInput.focus();
+    stopCamera();
   });
   document.getElementById("so-camera-toggle-btn").addEventListener("click", toggleOrderScanCamera);
   if (preselectedSku && !preselectedProductId) {
-    try {
-      await processOrderScan(preselectedSku);
-    } catch (err) {
-      showToast(err.message, "error");
-    }
+    processOrderScanFromInput();
   }
 }
 
@@ -1370,10 +1431,8 @@ document.getElementById("new-product-btn").addEventListener("click", openNewProd
 document.getElementById("new-sales-btn").addEventListener("click", () => openNewSalesModal());
 document.getElementById("new-customer-btn").addEventListener("click", openNewCustomerModal);
 document.getElementById("new-purchase-btn").addEventListener("click", openNewPurchaseModal);
-document.getElementById("scan-search-btn").addEventListener("click", handleScanSearch);
-document.getElementById("scan-input").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") handleScanSearch();
-});
+document.getElementById("scan-cancel-btn").addEventListener("click", resetScanView);
+setupAutoScanInput(document.getElementById("scan-input"), handleScanSearch);
 document.getElementById("camera-toggle-btn").addEventListener("click", toggleScanViewCamera);
 document.getElementById("customers-search").addEventListener("input", () => {
   clearTimeout(customersSearchTimer);
