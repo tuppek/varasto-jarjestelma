@@ -28,6 +28,14 @@ Ilmainen HTTPS-osoite iPhonelle ja muille laitteille – ei tarvitse omaa konett
 
 4. Render lukee `render.yaml` automaattisesti → **Apply**
 
+   **Jos virhe:** *Blueprint file render.yaml not found on master branch*
+   - Render etsii oletuksena haaraa `master`, mutta GitHub käyttää usein `main`
+   - Korjaus: aja terminaalissa:
+     ```bash
+     git push origin main:master
+     ```
+   - Tai Renderissä valitse oikea haara **main** ennen Apply-painiketta
+
 5. Odota 3–5 min – saat osoitteen:
    `https://varasto-jarjestelma-xxxx.onrender.com`
 
