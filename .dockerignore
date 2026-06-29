@@ -1,0 +1,9 @@
+backend/.venv
+backend/__pycache__
+data
+cert
+.git
+.cursor
+**/__pycache__
+*.pyc
+.DS_Store

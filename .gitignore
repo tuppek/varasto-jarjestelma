@@ -1,0 +1,7 @@
+backend/.venv/
+backend/vendor/
+data/
+cert/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Varasto">
+  <title>Varastojärjestelmä</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/static/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Kirjautuminen -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-icon login-icon">📦</div>
+      <h1>Varastojärjestelmä</h1>
+      <p class="login-subtitle">Syötä työntekijänumerosi jatkaaksesi</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="employee-number">Työntekijänumero</label>
+          <input type="text" id="employee-number" placeholder="esim. 1001" autocomplete="username" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Kirjaudu sisään</button>
+      </form>
+      <p class="login-hint">Demo: 1001, 1002 tai 1003</p>
+      <div id="install-banner" class="install-banner hidden">
+        <p class="install-banner-title">📱 Asenna puhelimeen</p>
+        <p id="install-banner-text" class="install-banner-text">Chrome → ⋮ → <strong>Lisää aloitusnäytölle</strong> tai <strong>Asenna sovellus</strong></p>
+        <button type="button" id="install-app-btn" class="btn btn-primary btn-sm hidden">Asenna sovellus</button>
+      </div>
+      <p id="login-error" class="login-error hidden"></p>
+    </div>
+  </div>
+
+  <div class="app hidden" id="main-app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">📦</div>
+        <div>
+          <h1>Varasto</h1>
+          <p>Hallintajärjestelmä</p>
+        </div>
+      </div>
+      <nav class="menu">
+        <button class="menu-item active" data-view="dashboard">Etusivu</button>
+        <button class="menu-item" data-view="inventory">Saldo</button>
+        <button class="menu-item" data-view="products">Tuotteet</button>
+        <button class="menu-item" data-view="scan">Skannaus</button>
+        <button class="menu-item" data-view="customers">Asiakkaat</button>
+        <button class="menu-item" data-view="orders">Tilaukset</button>
+        <button class="menu-item" data-view="purchases">Ostotilaukset</button>
+        <button class="menu-item" data-view="movements">Varastotapahtumat</button>
+        <button class="menu-item" data-view="import">Tuonti</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="seed-btn" class="btn btn-secondary btn-block">Lataa esimerkkidata</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h2 id="view-title">Etusivu</h2>
+          <p id="view-subtitle">Yhteenveto varastosta ja avoimista tilauksista</p>
+        </div>
+        <button id="refresh-btn" class="btn btn-secondary">Päivitä</button>
+        <div class="user-bar">
+          <span id="current-user"></span>
+          <button id="logout-btn" class="btn btn-secondary btn-sm">Kirjaudu ulos</button>
+        </div>
+      </header>
+
+      <div id="toast" class="toast hidden"></div>
+
+      <!-- Dashboard -->
+      <section id="view-dashboard" class="view active">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Varaston tilanne</h3>
+            <div id="dashboard-summary"></div>
+          </div>
+          <div class="panel">
+            <h3>Huomioitavaa</h3>
+            <div id="dashboard-alerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Inventory -->
+      <section id="view-inventory" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Varastosaldo</h3>
+            <input type="search" id="inventory-search" placeholder="Hae tuotteita..." class="search-input">
+          </div>
+          <p class="hint panel-hint">Klikkaa riviä nähdäksesi tuotteen lisätiedot.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Tuote</th>
+                  <th>Varastossa</th>
+                  <th>Tilattu</th>
+                  <th>Varattu</th>
+                  <th>Vapaa</th>
+                  <th>Minimi</th>
+                  <th>Tila</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Products -->
+      <section id="view-products" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Tuotteet</h3>
+            <button class="btn btn-primary" id="new-product-btn">+ Uusi tuote</button>
+          </div>
+          <p class="hint panel-hint">Klikkaa tuotetta nähdäksesi valmistajan, tukkurin ja muut tiedot.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nimi</th>
+                  <th>Yksikkö</th>
+                  <th>Saldo</th>
+                  <th>Minimi</th>
+                </tr>
+              </thead>
+              <tbody id="products-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scan -->
+      <section id="view-scan" class="view">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Viivakoodihaku / SKU-skannaus</h3>
+            <p class="hint">Käytä USB-skanneria tai kirjoita SKU. Skanneri toimii kuten näppäimistö – kohdista kenttään ja skannaa.</p>
+            <div class="scan-input-wrap">
+              <input type="text" id="scan-input" class="scan-input" placeholder="Skannaa tai kirjoita SKU..." autofocus>
+              <button class="btn btn-primary" id="scan-search-btn">Hae</button>
+            </div>
+            <div id="scan-result" class="scan-result"></div>
+          </div>
+          <div class="panel">
+            <h3>Kameraskannaus</h3>
+            <p class="hint">Skannaa viivakoodi puhelimen tai tietokoneen kameralla.</p>
+            <div id="camera-reader" class="camera-reader"></div>
+            <button class="btn btn-secondary btn-sm" id="camera-toggle-btn">Käynnistä kamera</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Customers -->
+      <section id="view-customers" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Asiakkaat</h3>
+            <div class="panel-header-actions">
+              <input type="search" id="customers-search" placeholder="Hae nimellä tai puhelinnumerolla..." class="search-input">
+              <button class="btn btn-primary" id="new-customer-btn">+ Uusi asiakas</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nimi</th>
+                  <th>Puhelin</th>
+                  <th>Sähköposti</th>
+                  <th>Osoite</th>
+                  <th>Toiminnot</th>
+                </tr>
+              </thead>
+              <tbody id="customers-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Orders -->
+      <section id="view-orders" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Tilaukset</h3>
+            <div class="panel-header-actions">
+              <input type="search" id="orders-search" placeholder="Hae asiakas, tilausnumero tai tuote..." class="search-input">
+              <button class="btn btn-primary" id="new-sales-btn">+ Uusi tilaus</button>
+            </div>
+          </div>
+
+          <div class="tab-bar" id="orders-tabs">
+            <button class="tab active" data-fulfillment="">Kaikki</button>
+            <button class="tab" data-fulfillment="toimitus">Toimitukset</button>
+            <button class="tab" data-fulfillment="nouto">Noudot</button>
+          </div>
+
+          <p class="hint">Valitse yläpalkista toimitukset tai noudot. Muokkaa tilausta klikkaamalla <strong>Muokkaa</strong>.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tilausnumero</th>
+                  <th>Asiakas</th>
+                  <th>Puhelin</th>
+                  <th>Tuotteet</th>
+                  <th>Palvelut</th>
+                  <th>Tapa</th>
+                  <th>Päivämäärä</th>
+                  <th>Tila</th>
+                  <th>Toiminnot</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Purchase orders -->
+      <section id="view-purchases" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Ostotilaukset</h3>
+            <button class="btn btn-primary" id="new-purchase-btn">+ Uusi ostotilaus</button>
+          </div>
+          <div id="purchases-list" class="order-list"></div>
+        </div>
+      </section>
+
+      <!-- Movements -->
+      <section id="view-movements" class="view">
+        <div class="panel">
+          <h3>Varastotapahtumat</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aika</th>
+                  <th>Tuote</th>
+                  <th>Tapahtuma</th>
+                  <th>Määrä</th>
+                  <th>Viite</th>
+                  <th>Huomio</th>
+                </tr>
+              </thead>
+              <tbody id="movements-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Import -->
+      <section id="view-import" class="view">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Tuo tuotteet Excelistä</h3>
+            <p class="hint">Tuo tuotteet vanhasta järjestelmästä tai Excel-tiedostosta. Tunnistaa sarakkeet automaattisesti (SKU, Nimi, Saldo, Tilattu, Varattu jne.).</p>
+            <div class="import-actions">
+              <a href="#" id="download-template-btn" class="btn btn-secondary">Lataa Excel-malli</a>
+              <label class="btn btn-primary file-label">
+                Valitse Excel-tiedosto
+                <input type="file" id="import-file" accept=".xlsx,.xls" hidden>
+              </label>
+            </div>
+            <div id="import-result" class="import-result"></div>
+          </div>
+          <div class="panel">
+            <h3>Tuetut sarakkeet</h3>
+            <ul class="feature-list">
+              <li><strong>SKU</strong> – tuotekoodi (pakollinen)</li>
+              <li><strong>Nimi</strong> – tuotenimi (pakollinen)</li>
+              <li><strong>Saldo</strong> – varastossa oleva määrä</li>
+              <li><strong>Tilattu</strong> – tulossa olevat tuotteet</li>
+              <li><strong>Varattu</strong> – varattu myyntitilauksille</li>
+              <li><strong>Minimi</strong> – hälytysraja</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+      <div id="modal-footer" class="modal-footer"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
