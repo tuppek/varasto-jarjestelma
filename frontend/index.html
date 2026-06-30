@@ -15,24 +15,23 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <!-- Kirjautuminen -->
   <div id="login-screen" class="login-screen">
     <div class="login-card">
       <div class="brand-icon login-icon">📦</div>
-      <h1>Varastojärjestelmä</h1>
-      <p class="login-subtitle">Syötä työntekijänumerosi jatkaaksesi</p>
+      <h1 data-i18n="app.title">Varastojärjestelmä</h1>
+      <p class="login-subtitle" data-i18n="login.subtitle">Syötä työntekijänumerosi jatkaaksesi</p>
       <form id="login-form">
         <div class="form-group">
-          <label for="employee-number">Työntekijänumero</label>
-          <input type="text" id="employee-number" placeholder="esim. 1001" autocomplete="username" required>
+          <label for="employee-number" data-i18n="login.employeeNumber">Työntekijänumero</label>
+          <input type="text" id="employee-number" data-i18n-placeholder="login.placeholder" placeholder="esim. 1001" autocomplete="username" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Kirjaudu sisään</button>
+        <button type="submit" class="btn btn-primary btn-block" data-i18n="login.submit">Kirjaudu sisään</button>
       </form>
-      <p class="login-hint">Demo: 1001, 1002 tai 1003</p>
+      <p class="login-hint" data-i18n="login.hint">Demo: 1001, 1002 tai 1003</p>
       <div id="install-banner" class="install-banner hidden">
-        <p class="install-banner-title">📱 Asenna puhelimeen</p>
-        <p id="install-banner-text" class="install-banner-text">Chrome → ⋮ → <strong>Lisää aloitusnäytölle</strong> tai <strong>Asenna sovellus</strong></p>
-        <button type="button" id="install-app-btn" class="btn btn-primary btn-sm hidden">Asenna sovellus</button>
+        <p class="install-banner-title" data-i18n="login.installTitle">📱 Asenna puhelimeen</p>
+        <p id="install-banner-text" class="install-banner-text" data-i18n-html="login.installText">Chrome → ⋮ → <strong>Lisää aloitusnäytölle</strong> tai <strong>Asenna sovellus</strong></p>
+        <button type="button" id="install-app-btn" class="btn btn-primary btn-sm hidden" data-i18n="login.installBtn">Asenna sovellus</button>
       </div>
       <p id="login-error" class="login-error hidden"></p>
     </div>
@@ -43,23 +42,37 @@
       <div class="brand">
         <div class="brand-icon">📦</div>
         <div>
-          <h1>Varasto</h1>
-          <p>Hallintajärjestelmä</p>
+          <h1 data-i18n="app.brand">Varasto</h1>
+          <p data-i18n="app.brandSub">Hallintajärjestelmä</p>
         </div>
       </div>
       <nav class="menu">
-        <button class="menu-item active" data-view="dashboard">Etusivu</button>
-        <button class="menu-item" data-view="inventory">Saldo</button>
-        <button class="menu-item" data-view="products">Tuotteet</button>
-        <button class="menu-item" data-view="scan">Skannaus</button>
-        <button class="menu-item" data-view="customers">Asiakkaat</button>
-        <button class="menu-item" data-view="orders">Tilaukset</button>
-        <button class="menu-item" data-view="purchases">Ostotilaukset</button>
-        <button class="menu-item" data-view="movements">Varastotapahtumat</button>
-        <button class="menu-item" data-view="import">Tuonti</button>
+        <button class="menu-item active" data-view="dashboard" data-i18n="nav.dashboard">Etusivu</button>
+        <button class="menu-item" data-view="inventory" data-i18n="nav.inventory">Saldo</button>
+        <button class="menu-item" data-view="products" data-i18n="nav.products">Tuotteet</button>
+        <button class="menu-item" data-view="scan" data-i18n="nav.scan">Skannaus</button>
+        <button class="menu-item" data-view="customers" data-i18n="nav.customers">Asiakkaat</button>
+        <button class="menu-item" data-view="orders" data-i18n="nav.orders">Tilaukset</button>
+        <button class="menu-item" data-view="purchases" data-i18n="nav.purchases">Ostotilaukset</button>
+        <button class="menu-item" data-view="movements" data-i18n="nav.movements">Varastotapahtumat</button>
+        <button class="menu-item" data-view="import" data-i18n="nav.import">Tuonti</button>
       </nav>
+      <div class="sidebar-bottom">
+        <div class="user-bar">
+          <span id="current-user" class="user-name"></span>
+          <div class="user-actions">
+            <button type="button" id="settings-btn" class="icon-btn" data-i18n-title="common.settings" title="Asetukset" aria-label="Asetukset">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            <button type="button" id="logout-btn" class="btn btn-secondary btn-sm btn-block" data-i18n="common.logout">Kirjaudu ulos</button>
+          </div>
+        </div>
+      </div>
       <div class="sidebar-footer">
-        <button id="seed-btn" class="btn btn-secondary btn-block">Lataa esimerkkidata</button>
+        <button id="seed-btn" class="btn btn-secondary btn-block" data-i18n="settings.seed">Lataa esimerkkidata</button>
       </div>
     </aside>
 
@@ -69,50 +82,44 @@
           <h2 id="view-title">Etusivu</h2>
           <p id="view-subtitle">Yhteenveto varastosta ja avoimista tilauksista</p>
         </div>
-        <button id="refresh-btn" class="btn btn-secondary">Päivitä</button>
-        <div class="user-bar">
-          <span id="current-user"></span>
-          <button id="logout-btn" class="btn btn-secondary btn-sm">Kirjaudu ulos</button>
-        </div>
+        <button id="refresh-btn" class="btn btn-secondary" data-i18n="common.refresh">Päivitä</button>
       </header>
 
       <div id="toast" class="toast hidden"></div>
 
-      <!-- Dashboard -->
       <section id="view-dashboard" class="view active">
         <div class="stats-grid" id="stats-grid"></div>
         <div class="panel-grid">
           <div class="panel">
-            <h3>Varaston tilanne</h3>
+            <h3 data-i18n="dashboard.inventoryStatus">Varaston tilanne</h3>
             <div id="dashboard-summary"></div>
           </div>
           <div class="panel">
-            <h3>Huomioitavaa</h3>
+            <h3 data-i18n="dashboard.alerts">Huomioitavaa</h3>
             <div id="dashboard-alerts"></div>
           </div>
         </div>
       </section>
 
-      <!-- Inventory -->
       <section id="view-inventory" class="view">
         <div class="panel">
           <div class="panel-header">
-            <h3>Varastosaldo</h3>
-            <input type="search" id="inventory-search" placeholder="Hae tuotteita..." class="search-input">
+            <h3 data-i18n="inventory.title">Varastosaldo</h3>
+            <input type="search" id="inventory-search" data-i18n-placeholder="inventory.search" placeholder="Hae tuotteita..." class="search-input">
           </div>
-          <p class="hint panel-hint">Klikkaa riviä nähdäksesi tuotteen lisätiedot.</p>
+          <p class="hint panel-hint" data-i18n="inventory.hint">Klikkaa riviä nähdäksesi tuotteen lisätiedot.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>SKU</th>
-                  <th>Tuote</th>
-                  <th>Varastossa</th>
-                  <th>Tilattu</th>
-                  <th>Varattu</th>
-                  <th>Vapaa</th>
-                  <th>Minimi</th>
-                  <th>Tila</th>
+                  <th data-i18n="common.sku">SKU</th>
+                  <th data-i18n="common.product">Tuote</th>
+                  <th data-i18n="common.onHand">Varastossa</th>
+                  <th data-i18n="common.ordered">Tilattu</th>
+                  <th data-i18n="common.reserved">Varattu</th>
+                  <th data-i18n="common.available">Vapaa</th>
+                  <th data-i18n="common.minimum">Minimi</th>
+                  <th data-i18n="common.status">Tila</th>
                 </tr>
               </thead>
               <tbody id="inventory-table"></tbody>
@@ -121,61 +128,58 @@
         </div>
       </section>
 
-      <!-- Products -->
       <section id="view-products" class="view">
         <div class="panel">
           <div class="panel-header">
-            <h3>Tuotteet</h3>
+            <h3 data-i18n="nav.products">Tuotteet</h3>
             <div class="panel-header-actions">
-              <input type="search" id="products-search" placeholder="Hae nimellä, SKU:lla, valmistajalla..." class="search-input">
-              <button class="btn btn-primary" id="new-product-btn">+ Uusi tuote</button>
+              <input type="search" id="products-search" data-i18n-placeholder="products.search" placeholder="Hae nimellä, SKU:lla, valmistajalla..." class="search-input">
+              <button class="btn btn-primary" id="new-product-btn" data-i18n="products.new">+ Uusi tuote</button>
             </div>
           </div>
-          <p class="hint panel-hint">Klikkaa tuotekorttia nähdäksesi lisätiedot ja muokata.</p>
+          <p class="hint panel-hint" data-i18n="products.hint">Klikkaa tuotekorttia nähdäksesi lisätiedot ja muokata.</p>
           <div id="products-cards" class="product-cards"></div>
         </div>
       </section>
 
-      <!-- Scan -->
       <section id="view-scan" class="view">
         <div class="panel-grid">
           <div class="panel">
-            <h3>Viivakoodihaku / SKU-skannaus</h3>
-            <p class="hint">Skannaa viivakoodi – haku käynnistyy automaattisesti. USB-skanneri tai kamera.</p>
+            <h3 data-i18n="scan.barcodeTitle">Viivakoodihaku / SKU-skannaus</h3>
+            <p class="hint" data-i18n="scan.barcodeHint">Skannaa viivakoodi – haku käynnistyy automaattisesti. USB-skanneri tai kamera.</p>
             <div class="scan-input-wrap">
-              <input type="text" id="scan-input" class="scan-input" placeholder="Skannaa viivakoodi..." autofocus>
-              <button type="button" class="btn btn-secondary" id="scan-cancel-btn">Peruuta</button>
+              <input type="text" id="scan-input" class="scan-input" data-i18n-placeholder="scan.placeholder" placeholder="Skannaa viivakoodi..." autofocus>
+              <button type="button" class="btn btn-secondary" id="scan-cancel-btn" data-i18n="common.cancel">Peruuta</button>
             </div>
             <div id="scan-result" class="scan-result"></div>
           </div>
           <div class="panel">
-            <h3>Kameraskannaus</h3>
-            <p class="hint">Skannaa viivakoodi puhelimen tai tietokoneen kameralla.</p>
+            <h3 data-i18n="scan.cameraTitle">Kameraskannaus</h3>
+            <p class="hint" data-i18n="scan.cameraHint">Skannaa viivakoodi puhelimen tai tietokoneen kameralla.</p>
             <div id="camera-reader" class="camera-reader"></div>
-            <button class="btn btn-secondary btn-sm" id="camera-toggle-btn">Käynnistä kamera</button>
+            <button class="btn btn-secondary btn-sm" id="camera-toggle-btn" data-i18n="scan.startCamera">Käynnistä kamera</button>
           </div>
         </div>
       </section>
 
-      <!-- Customers -->
       <section id="view-customers" class="view">
         <div class="panel">
           <div class="panel-header">
-            <h3>Asiakkaat</h3>
+            <h3 data-i18n="nav.customers">Asiakkaat</h3>
             <div class="panel-header-actions">
-              <input type="search" id="customers-search" placeholder="Hae nimellä tai puhelinnumerolla..." class="search-input">
-              <button class="btn btn-primary" id="new-customer-btn">+ Uusi asiakas</button>
+              <input type="search" id="customers-search" data-i18n-placeholder="customers.search" placeholder="Hae nimellä tai puhelinnumerolla..." class="search-input">
+              <button class="btn btn-primary" id="new-customer-btn" data-i18n="customers.new">+ Uusi asiakas</button>
             </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Nimi</th>
-                  <th>Puhelin</th>
-                  <th>Sähköposti</th>
-                  <th>Osoite</th>
-                  <th>Toiminnot</th>
+                  <th data-i18n="common.name">Nimi</th>
+                  <th data-i18n="common.phone">Puhelin</th>
+                  <th data-i18n="common.email">Sähköposti</th>
+                  <th data-i18n="common.address">Osoite</th>
+                  <th data-i18n="common.actions">Toiminnot</th>
                 </tr>
               </thead>
               <tbody id="customers-table"></tbody>
@@ -184,38 +188,37 @@
         </div>
       </section>
 
-      <!-- Orders -->
       <section id="view-orders" class="view">
         <div class="panel">
           <div class="panel-header">
-            <h3>Tilaukset</h3>
+            <h3 data-i18n="nav.orders">Tilaukset</h3>
             <div class="panel-header-actions">
-              <input type="search" id="orders-search" placeholder="Hae asiakas, tilausnumero tai tuote..." class="search-input">
-              <button class="btn btn-primary" id="new-sales-btn">+ Uusi tilaus</button>
+              <input type="search" id="orders-search" data-i18n-placeholder="orders.search" placeholder="Hae asiakas, tilausnumero tai tuote..." class="search-input">
+              <button class="btn btn-primary" id="new-sales-btn" data-i18n="orders.new">+ Uusi tilaus</button>
             </div>
           </div>
 
           <div class="tab-bar" id="orders-tabs">
-            <button class="tab active" data-fulfillment="">Kaikki</button>
-            <button class="tab" data-fulfillment="toimitus">Toimitukset</button>
-            <button class="tab" data-fulfillment="nouto">Noudot</button>
+            <button class="tab active" data-fulfillment="" data-i18n="orders.tabAll">Kaikki</button>
+            <button class="tab" data-fulfillment="toimitus" data-i18n="orders.tabDelivery">Toimitukset</button>
+            <button class="tab" data-fulfillment="nouto" data-i18n="orders.tabPickup">Noudot</button>
           </div>
 
-          <p class="hint">Valitse yläpalkista toimitukset tai noudot. Muokkaa tilausta klikkaamalla <strong>Muokkaa</strong>.</p>
+          <p class="hint" data-i18n-html="orders.hint">Valitse yläpalkista toimitukset tai noudot. Muokkaa tilausta klikkaamalla <strong>Muokkaa</strong>.</p>
 
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Tilausnumero</th>
-                  <th>Asiakas</th>
-                  <th>Puhelin</th>
-                  <th>Tuotteet</th>
-                  <th>Palvelut</th>
-                  <th>Tapa</th>
-                  <th>Päivämäärä</th>
-                  <th>Tila</th>
-                  <th>Toiminnot</th>
+                  <th data-i18n="common.orderNumber">Tilausnumero</th>
+                  <th data-i18n="common.customer">Asiakas</th>
+                  <th data-i18n="common.phone">Puhelin</th>
+                  <th data-i18n="common.products">Tuotteet</th>
+                  <th data-i18n="common.services">Palvelut</th>
+                  <th data-i18n="common.method">Tapa</th>
+                  <th data-i18n="common.date">Päivämäärä</th>
+                  <th data-i18n="common.status">Tila</th>
+                  <th data-i18n="common.actions">Toiminnot</th>
                 </tr>
               </thead>
               <tbody id="orders-table"></tbody>
@@ -224,31 +227,29 @@
         </div>
       </section>
 
-      <!-- Purchase orders -->
       <section id="view-purchases" class="view">
         <div class="panel">
           <div class="panel-header">
-            <h3>Ostotilaukset</h3>
-            <button class="btn btn-primary" id="new-purchase-btn">+ Uusi ostotilaus</button>
+            <h3 data-i18n="nav.purchases">Ostotilaukset</h3>
+            <button class="btn btn-primary" id="new-purchase-btn" data-i18n="purchases.new">+ Uusi ostotilaus</button>
           </div>
           <div id="purchases-list" class="order-list"></div>
         </div>
       </section>
 
-      <!-- Movements -->
       <section id="view-movements" class="view">
         <div class="panel">
-          <h3>Varastotapahtumat</h3>
+          <h3 data-i18n="movements.title">Varastotapahtumat</h3>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Aika</th>
-                  <th>Tuote</th>
-                  <th>Tapahtuma</th>
-                  <th>Määrä</th>
-                  <th>Viite</th>
-                  <th>Huomio</th>
+                  <th data-i18n="common.time">Aika</th>
+                  <th data-i18n="common.product">Tuote</th>
+                  <th data-i18n="movements.event">Tapahtuma</th>
+                  <th data-i18n="common.quantity">Määrä</th>
+                  <th data-i18n="common.reference">Viite</th>
+                  <th data-i18n="common.notes">Huomio</th>
                 </tr>
               </thead>
               <tbody id="movements-table"></tbody>
@@ -257,30 +258,29 @@
         </div>
       </section>
 
-      <!-- Import -->
       <section id="view-import" class="view">
         <div class="panel-grid">
           <div class="panel">
-            <h3>Tuo tuotteet Excelistä</h3>
-            <p class="hint">Tuo tuotteet vanhasta järjestelmästä tai Excel-tiedostosta. Tunnistaa sarakkeet automaattisesti (SKU, Nimi, Saldo, Tilattu, Varattu jne.).</p>
+            <h3 data-i18n="import.excelTitle">Tuo tuotteet Excelistä</h3>
+            <p class="hint" data-i18n="import.excelHint">Tuo tuotteet vanhasta järjestelmästä tai Excel-tiedostosta. Tunnistaa sarakkeet automaattisesti (SKU, Nimi, Saldo, Tilattu, Varattu jne.).</p>
             <div class="import-actions">
-              <a href="#" id="download-template-btn" class="btn btn-secondary">Lataa Excel-malli</a>
+              <a href="#" id="download-template-btn" class="btn btn-secondary" data-i18n="import.downloadTemplate">Lataa Excel-malli</a>
               <label class="btn btn-primary file-label">
-                Valitse Excel-tiedosto
+                <span data-i18n="import.selectFile">Valitse Excel-tiedosto</span>
                 <input type="file" id="import-file" accept=".xlsx,.xls" hidden>
               </label>
             </div>
             <div id="import-result" class="import-result"></div>
           </div>
           <div class="panel">
-            <h3>Tuetut sarakkeet</h3>
+            <h3 data-i18n="import.columnsTitle">Tuetut sarakkeet</h3>
             <ul class="feature-list">
-              <li><strong>SKU</strong> – tuotekoodi (pakollinen)</li>
-              <li><strong>Nimi</strong> – tuotenimi (pakollinen)</li>
-              <li><strong>Saldo</strong> – varastossa oleva määrä</li>
-              <li><strong>Tilattu</strong> – tulossa olevat tuotteet</li>
-              <li><strong>Varattu</strong> – varattu myyntitilauksille</li>
-              <li><strong>Minimi</strong> – hälytysraja</li>
+              <li data-i18n-html="import.colSku"><strong>SKU</strong> – tuotekoodi (pakollinen)</li>
+              <li data-i18n-html="import.colName"><strong>Nimi</strong> – tuotenimi (pakollinen)</li>
+              <li data-i18n-html="import.colStock"><strong>Saldo</strong> – varastossa oleva määrä</li>
+              <li data-i18n-html="import.colOrdered"><strong>Tilattu</strong> – tulossa olevat tuotteet</li>
+              <li data-i18n-html="import.colReserved"><strong>Varattu</strong> – varattu myyntitilauksille</li>
+              <li data-i18n-html="import.colMin"><strong>Minimi</strong> – hälytysraja</li>
             </ul>
           </div>
         </div>
@@ -300,6 +300,7 @@
   </div>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/static/js/i18n.js"></script>
   <script src="/static/js/app.js"></script>
 </body>
 </html>

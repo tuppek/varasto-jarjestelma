@@ -1,7 +1,8 @@
-const CACHE = "varasto-v5";
+const CACHE = "varasto-v6";
 const ASSETS = [
   "/",
   "/static/css/style.css",
+  "/static/js/i18n.js",
   "/static/js/app.js",
   "/static/icons/icon-192.png",
   "/static/icons/icon-512.png",

@@ -253,6 +253,7 @@ class DashboardStats(BaseModel):
     total_on_hand: int
     total_reserved: int
     total_ordered: int
+    total_inventory_value: float
 
 
 class ImportResult(BaseModel):

@@ -1,46 +1,40 @@
 const API = "/api";
 
-const VIEW_META = {
-  dashboard: { title: "Etusivu", subtitle: "Yhteenveto varastosta ja avoimista tilauksista" },
-  inventory: { title: "Saldo", subtitle: "Varastossa, tilattu, varattu ja vapaa saldo" },
-  products: { title: "Tuotteet", subtitle: "Tuoterekisteri" },
-  scan: { title: "Skannaus", subtitle: "Hae tuotteita viivakoodilla tai SKU:lla" },
-  customers: { title: "Asiakkaat", subtitle: "Asiakasrekisteri – haku ja lisäys" },
-  orders: { title: "Tilaukset", subtitle: "Toimitukset, noudot, haku ja muokkaus" },
-  purchases: { title: "Ostotilaukset", subtitle: "Tilaa ja vastaanota tuotteita" },
-  movements: { title: "Varastotapahtumat", subtitle: "Historia kaikista saldomuutoksista" },
-  import: { title: "Tuonti", subtitle: "Tuo data Excelistä tai vanhasta järjestelmästä" },
-};
+function viewMeta(view) {
+  return { title: t(`view.${view}.title`), subtitle: t(`view.${view}.subtitle`) };
+}
 
-const STATUS_LABELS = {
-  luonnos: "Luonnos",
-  tilattu: "Tilattu",
-  osittain_vastaanotettu: "Osittain vastaanotettu",
-  vastaanotettu: "Vastaanotettu",
-  peruttu: "Peruttu",
-  hyvaksytty: "Hyväksytty",
-  osittain_toimitettu: "Osittain toimitettu",
-  toimitettu: "Toimitettu",
-};
+function statusLabel(status) {
+  return t(`status.${status}`, status);
+}
 
-const FULFILLMENT_LABELS = {
-  toimitus: "Toimitus",
-  nouto: "Nouto",
-};
+function fulfillmentLabel(type) {
+  return t(`fulfillment.${type}`, type);
+}
 
-const SERVICE_LABELS = {
-  kuljetus: "Kuljetus",
-  asennus: "Asennus",
-};
+function serviceLabel(service) {
+  return t(`service.${service}`, service);
+}
 
-const MOVEMENT_LABELS = {
-  alkusaldo: "Alkusaldo",
-  ostotilaus: "Ostotilaus",
-  vastaanotto: "Vastaanotto",
-  varaus: "Varaus",
-  toimitus: "Toimitus",
-  varaus_peru: "Varauksen peruutus",
-};
+function movementLabel(type) {
+  return t(`movement.${type}`, type);
+}
+
+function stockBadgeLabel(low) {
+  return low ? t("common.low") : t("common.ok");
+}
+
+function applyLanguageChange() {
+  applyStaticI18n();
+  const meta = viewMeta(currentView);
+  document.getElementById("view-title").textContent = meta.title;
+  document.getElementById("view-subtitle").textContent = meta.subtitle;
+  if (currentEmployee) loadView(currentView);
+}
+
+function cameraBtnLabel(active) {
+  return active ? t("scan.stopCamera") : t("scan.startCamera");
+}
 
 let products = [];
 let customers = [];
@@ -66,7 +60,7 @@ async function stopCamera() {
   } catch (_) {
     /* already stopped */
   }
-  if (activeCamera.btn) activeCamera.btn.textContent = "Käynnistä kamera";
+  if (activeCamera.btn) activeCamera.btn.textContent = cameraBtnLabel(false);
   if (activeCamera.readerEl?.classList.contains("camera-reader-modal")) {
     activeCamera.readerEl.classList.add("hidden");
   }
@@ -86,7 +80,7 @@ async function toggleCameraFor(readerId, btnId, onDecode) {
   await stopCamera();
 
   if (typeof Html5Qrcode === "undefined") {
-    showToast("Kamerakirjasto ei latautunut", "error");
+    showToast(t("toast.cameraLib"), "error");
     return;
   }
 
@@ -101,12 +95,12 @@ async function toggleCameraFor(readerId, btnId, onDecode) {
       onDecode
     );
     activeCamera = { html5QrCode, btn, readerId, readerEl };
-    btn.textContent = "Pysäytä kamera";
+    btn.textContent = cameraBtnLabel(true);
   } catch (err) {
     if (readerEl.classList.contains("camera-reader-modal")) {
       readerEl.classList.add("hidden");
     }
-    showToast("Kamera ei käynnisty: " + err.message, "error");
+    showToast(t("toast.cameraError", { msg: err.message }), "error");
   }
 }
 
@@ -197,7 +191,7 @@ async function api(path, options = {}) {
   }
   if (res.status === 401 && path !== "/auth/login") {
     logout(false);
-    throw new Error(data.detail || "Istunto vanhentunut – kirjaudu uudelleen");
+    throw new Error(data.detail || t("toast.sessionExpired"));
   }
   if (!res.ok) {
     const msg = typeof data.detail === "string"
@@ -219,12 +213,12 @@ function showToast(message, type = "success") {
 
 function formatDate(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("fi-FI");
+  return new Date(iso).toLocaleString(getLocale());
 }
 
 function formatDateOnly(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("fi-FI");
+  return new Date(iso).toLocaleDateString(getLocale());
 }
 
 function statusBadge(status) {
@@ -233,19 +227,19 @@ function statusBadge(status) {
     : status === "peruttu"
       ? "cancel"
       : "status";
-  return `<span class="badge ${cls}">${STATUS_LABELS[status] || status}</span>`;
+  return `<span class="badge ${cls}">${statusLabel(status)}</span>`;
 }
 
 function fulfillmentBadge(type) {
-  return `<span class="badge status">${FULFILLMENT_LABELS[type] || type}</span>`;
+  return `<span class="badge status">${fulfillmentLabel(type)}</span>`;
 }
 
 function orderMeta(order) {
   const parts = [];
   if (order.fulfillment_type) {
-    parts.push(`${FULFILLMENT_LABELS[order.fulfillment_type]}: ${formatDateOnly(order.scheduled_date)}`);
+    parts.push(`${fulfillmentLabel(order.fulfillment_type)}: ${formatDateOnly(order.scheduled_date)}`);
   }
-  if (order.created_by_name) parts.push(`Luonut: ${order.created_by_name}`);
+  if (order.created_by_name) parts.push(t("order.createdBy", { name: order.created_by_name }));
   return parts.join(" · ");
 }
 
@@ -273,7 +267,7 @@ function initPwa() {
     deferredInstallPrompt = e;
     if (installBtn) installBtn.classList.remove("hidden");
     if (bannerText) {
-      bannerText.innerHTML = "Asenna sovellus puhelimen aloitusnäytölle – toimii kuin tavallinen sovellus.";
+      bannerText.innerHTML = t("login.installPrompt");
     }
     banner.classList.remove("hidden");
   });
@@ -330,7 +324,7 @@ function logout(notify = true) {
   sessionStorage.removeItem("authToken");
   sessionStorage.removeItem("currentEmployee");
   showLogin();
-  if (notify) showToast("Uloskirjattu");
+  if (notify) showToast(t("toast.loggedOut"));
 }
 
 function switchView(view) {
@@ -344,7 +338,7 @@ function switchView(view) {
   document.querySelectorAll(".view").forEach((section) => {
     section.classList.toggle("active", section.id === `view-${view}`);
   });
-  const meta = VIEW_META[view];
+  const meta = viewMeta(view);
   document.getElementById("view-title").textContent = meta.title;
   document.getElementById("view-subtitle").textContent = meta.subtitle;
   loadView(view);
@@ -371,38 +365,36 @@ async function refreshAll() {
   salesOrders = await api("/sales-orders");
   purchaseOrders = await api("/purchase-orders");
   await loadView(currentView);
-  if (currentView !== "orders" && currentView !== "customers") showToast("Data päivitetty");
+  if (currentView !== "orders" && currentView !== "customers") showToast(t("toast.dataUpdated"));
 }
 
 async function renderDashboard() {
   const stats = await api("/dashboard");
   document.getElementById("stats-grid").innerHTML = `
-    <div class="stat-card"><div class="label">Tuotteita</div><div class="value">${stats.product_count}</div></div>
-    <div class="stat-card info"><div class="label">Varastossa</div><div class="value">${stats.total_on_hand}</div></div>
-    <div class="stat-card"><div class="label">Tilattu</div><div class="value">${stats.total_ordered}</div></div>
-    <div class="stat-card warning"><div class="label">Varattu</div><div class="value">${stats.total_reserved}</div></div>
-    <div class="stat-card warning"><div class="label">Vähissä</div><div class="value">${stats.low_stock_count}</div></div>
-    <div class="stat-card"><div class="label">Avoimet tilaukset</div><div class="value">${stats.pending_sales_orders}</div></div>
+    <div class="stat-card"><div class="label">${t("dashboard.statProducts")}</div><div class="value">${stats.product_count}</div></div>
+    <div class="stat-card info"><div class="label">${t("dashboard.statValue")}</div><div class="value">${formatPrice(stats.total_inventory_value)}</div></div>
+    <div class="stat-card"><div class="label">${t("dashboard.statOrdered")}</div><div class="value">${stats.total_ordered}</div></div>
+    <div class="stat-card warning"><div class="label">${t("dashboard.statReserved")}</div><div class="value">${stats.total_reserved}</div></div>
+    <div class="stat-card warning"><div class="label">${t("dashboard.statLow")}</div><div class="value">${stats.low_stock_count}</div></div>
+    <div class="stat-card"><div class="label">${t("dashboard.statOpenOrders")}</div><div class="value">${stats.pending_sales_orders}</div></div>
   `;
 
   document.getElementById("dashboard-summary").innerHTML = `
-    <div class="summary-row"><span>Varastossa yhteensä</span><strong>${stats.total_on_hand} kpl</strong></div>
-    <div class="summary-row"><span>Tilattu (tulossa)</span><strong>${stats.total_ordered} kpl</strong></div>
-    <div class="summary-row"><span>Varattu myynneille</span><strong>${stats.total_reserved} kpl</strong></div>
-    <div class="summary-row"><span>Vapaa käytettävissä</span><strong>${stats.total_on_hand - stats.total_reserved} kpl</strong></div>
-    <div class="summary-row"><span>Avoimet ostotilaukset</span><strong>${stats.pending_purchase_orders}</strong></div>
+    <div class="summary-row"><span>${t("dashboard.orderedIncoming")}</span><strong>${stats.total_ordered} ${t("common.pcs")}</strong></div>
+    <div class="summary-row"><span>${t("dashboard.reservedSales")}</span><strong>${stats.total_reserved} ${t("common.pcs")}</strong></div>
+    <div class="summary-row"><span>${t("dashboard.openPurchases")}</span><strong>${stats.pending_purchase_orders}</strong></div>
   `;
 
   if (stats.low_stock_count === 0) {
     document.getElementById("dashboard-alerts").innerHTML =
-      '<p class="hint">Kaikki tuotteet minimivaraston yläpuolella.</p>';
+      `<p class="hint">${t("dashboard.allAboveMin")}</p>`;
   } else {
     products = await api("/products");
     const low = products.filter((p) => p.quantity_available <= p.min_stock_level);
     document.getElementById("dashboard-alerts").innerHTML = low
       .map(
         (p) =>
-          `<div class="alert-item"><strong>${p.name}</strong> (${p.sku}): vapaa ${p.quantity_available}, minimi ${p.min_stock_level}</div>`
+          `<div class="alert-item"><strong>${escapeHtml(p.name)}</strong> (${escapeHtml(p.sku)}): ${t("product.labelFree")} ${p.quantity_available}, ${t("common.minimum").toLowerCase()} ${p.min_stock_level}</div>`
       )
       .join("");
   }
@@ -419,7 +411,7 @@ async function renderInventory() {
     ? filtered
         .map((p) => {
           const low = p.quantity_available <= p.min_stock_level;
-          return `<tr class="clickable-row" onclick="openProductDetailModal(${p.id})" title="Näytä lisätiedot">
+          return `<tr class="clickable-row" onclick="openProductDetailModal(${p.id})" title="${t("common.showDetails")}">
             <td>${p.sku}</td>
             <td>${p.name}</td>
             <td><strong>${p.quantity_on_hand}</strong></td>
@@ -427,11 +419,11 @@ async function renderInventory() {
             <td>${p.quantity_reserved}</td>
             <td>${p.quantity_available}</td>
             <td>${p.min_stock_level}</td>
-            <td><span class="badge ${low ? "low" : "ok"}">${low ? "Vähissä" : "OK"}</span></td>
+            <td><span class="badge ${low ? "low" : "ok"}">${stockBadgeLabel(low)}</span></td>
           </tr>`;
         })
         .join("")
-    : `<tr><td colspan="8" class="empty-state">Ei tuotteita</td></tr>`;
+    : `<tr><td colspan="8" class="empty-state">${t("inventory.empty")}</td></tr>`;
 }
 
 async function renderProducts() {
@@ -449,31 +441,31 @@ async function renderProducts() {
 
   container.innerHTML = filtered.length
     ? filtered.map((p) => renderProductCard(p)).join("")
-    : `<p class="empty-state">${products.length ? "Ei hakutuloksia" : "Ei tuotteita. Luo uusi tai tuo Excelistä."}</p>`;
+    : `<p class="empty-state">${products.length ? t("products.noResults") : t("products.empty")}</p>`;
 }
 
 function renderProductCard(p) {
   const low = p.quantity_available <= p.min_stock_level;
   const mfr = p.manufacturer ? escapeHtml(p.manufacturer) : "–";
   const wholesaler = p.wholesaler ? escapeHtml(p.wholesaler) : "–";
-  return `<article class="product-card ${low ? "product-card--low" : ""}" onclick="openProductDetailModal(${p.id})" title="Näytä lisätiedot">
+  return `<article class="product-card ${low ? "product-card--low" : ""}" onclick="openProductDetailModal(${p.id})" title="${t("common.showDetails")}">
     <div class="product-card-header">
       <h4>${escapeHtml(p.name)}</h4>
-      <span class="badge ${low ? "low" : "ok"}">${low ? "Vähissä" : "OK"}</span>
+      <span class="badge ${low ? "low" : "ok"}">${stockBadgeLabel(low)}</span>
     </div>
     <p class="product-card-sku"><code>${escapeHtml(p.sku)}</code> · ${escapeHtml(p.unit)}</p>
     <dl class="product-card-meta">
-      <div><dt>Valmistaja</dt><dd>${mfr}</dd></div>
-      <div><dt>Tukkuri</dt><dd>${wholesaler}</dd></div>
+      <div><dt>${t("common.manufacturer")}</dt><dd>${mfr}</dd></div>
+      <div><dt>${t("common.wholesaler")}</dt><dd>${wholesaler}</dd></div>
     </dl>
     <div class="product-card-prices">
-      <span>Osto <strong>${formatPrice(p.purchase_price)}</strong></span>
-      <span>Myynti <strong>${formatPrice(p.sale_price)}</strong></span>
+      <span>${t("common.purchase")} <strong>${formatPrice(p.purchase_price)}</strong></span>
+      <span>${t("common.sale")} <strong>${formatPrice(p.sale_price)}</strong></span>
     </div>
     <div class="product-card-stock">
-      <span>Varastossa <strong>${p.quantity_on_hand}</strong></span>
-      <span>Vapaa <strong>${p.quantity_available}</strong></span>
-      <span>Minimi <strong>${p.min_stock_level}</strong></span>
+      <span>${t("common.onHand")} <strong>${p.quantity_on_hand}</strong></span>
+      <span>${t("common.available")} <strong>${p.quantity_available}</strong></span>
+      <span>${t("common.minimum")} <strong>${p.min_stock_level}</strong></span>
     </div>
   </article>`;
 }
@@ -490,7 +482,7 @@ function setupFulfillmentPicker(selected, prefix) {
       el.classList.add("selected");
       el.querySelector("input").checked = true;
       const isPickup = el.querySelector("input").value === "nouto";
-      document.getElementById(`${prefix}-date-label`).textContent = isPickup ? "Noutopäivä *" : "Toimituspäivä *";
+      document.getElementById(`${prefix}-date-label`).textContent = isPickup ? t("orders.pickupDate") : t("orders.deliveryDate");
     });
   });
   const val = selected || "toimitus";
@@ -499,34 +491,34 @@ function setupFulfillmentPicker(selected, prefix) {
     el.classList.toggle("selected", match);
     if (match) el.querySelector("input").checked = true;
   });
-  document.getElementById(`${prefix}-date-label`).textContent = val === "nouto" ? "Noutopäivä *" : "Toimituspäivä *";
+  document.getElementById(`${prefix}-date-label`).textContent = val === "nouto" ? t("orders.pickupDate") : t("orders.deliveryDate");
 }
 
 function fulfillmentPickerHtml(prefix, selected = "toimitus") {
   return `<div class="fulfillment-options" id="${prefix}-fulfillment-options">
     <label class="fulfillment-option ${selected === "toimitus" ? "selected" : ""}">
       <input type="radio" name="${prefix}-fulfillment" value="toimitus" ${selected === "toimitus" ? "checked" : ""}>
-      <strong>Toimitus</strong><span>Asiakkaalle</span>
+      <strong>${t("fulfillment.toimitus")}</strong><span>${t("fulfillment.toCustomer")}</span>
     </label>
     <label class="fulfillment-option ${selected === "nouto" ? "selected" : ""}">
       <input type="radio" name="${prefix}-fulfillment" value="nouto" ${selected === "nouto" ? "checked" : ""}>
-      <strong>Nouto</strong><span>Varastolta</span>
+      <strong>${t("fulfillment.nouto")}</strong><span>${t("fulfillment.fromWarehouse")}</span>
     </label>
   </div>`;
 }
 
 function orderActionButtons(order) {
   const btns = [];
-  btns.push(`<button class="btn btn-secondary btn-sm" onclick="openOrderTimeline(${order.id})">Aikajana</button>`);
+  btns.push(`<button class="btn btn-secondary btn-sm" onclick="openOrderTimeline(${order.id})">${t("orders.timeline")}</button>`);
   if (!["toimitettu", "peruttu"].includes(order.status)) {
-    btns.push(`<button class="btn btn-secondary btn-sm" onclick="openEditOrderModal(${order.id})">Muokkaa</button>`);
+    btns.push(`<button class="btn btn-secondary btn-sm" onclick="openEditOrderModal(${order.id})">${t("common.edit")}</button>`);
   }
   if (order.status === "vastaanotettu") {
-    btns.push(`<button class="btn btn-success btn-sm" onclick="approveSalesOrder(${order.id})">Hyväksy</button>`);
-    btns.push(`<button class="btn btn-danger btn-sm" onclick="cancelSalesOrder(${order.id})">Peru</button>`);
+    btns.push(`<button class="btn btn-success btn-sm" onclick="approveSalesOrder(${order.id})">${t("orders.approve")}</button>`);
+    btns.push(`<button class="btn btn-danger btn-sm" onclick="cancelSalesOrder(${order.id})">${t("orders.cancel")}</button>`);
   }
   if (["hyvaksytty", "osittain_toimitettu"].includes(order.status)) {
-    const label = order.fulfillment_type === "nouto" ? "Nouda" : "Toimita";
+    const label = order.fulfillment_type === "nouto" ? t("orders.pickup") : t("orders.deliver");
     btns.push(`<button class="btn btn-primary btn-sm" onclick="openDeliverModal(${order.id})">${label}</button>`);
   }
   return btns.length ? `<div class="action-buttons">${btns.join("")}</div>` : "-";
@@ -559,7 +551,7 @@ async function renderOrders() {
           </tr>`
         )
         .join("")
-    : `<tr><td colspan="9" class="empty-state">Ei tilauksia</td></tr>`;
+    : `<tr><td colspan="9" class="empty-state">${t("orders.empty")}</td></tr>`;
 }
 
 async function renderCustomers() {
@@ -575,11 +567,11 @@ async function renderCustomers() {
             <td>${c.phone}</td>
             <td>${c.email || "-"}</td>
             <td>${c.address || "-"}</td>
-            <td><button class="btn btn-secondary btn-sm" onclick="openEditCustomerModal(${c.id})">Muokkaa</button></td>
+            <td><button class="btn btn-secondary btn-sm" onclick="openEditCustomerModal(${c.id})">${t("common.edit")}</button></td>
           </tr>`
         )
         .join("")
-    : `<tr><td colspan="5" class="empty-state">Ei asiakkaita</td></tr>`;
+    : `<tr><td colspan="5" class="empty-state">${t("customers.empty")}</td></tr>`;
 }
 
 async function scanProductBySku(sku) {
@@ -592,10 +584,10 @@ async function lookupProductBySku(sku) {
 
 function servicesPickerHtml(prefix, selected = []) {
   const sel = new Set(selected);
-  return `<div class="form-group"><label>Palvelut</label>
+  return `<div class="form-group"><label>${t("common.services")}</label>
     <div class="service-checkboxes">
-      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="kuljetus" ${sel.has("kuljetus") ? "checked" : ""}> ${SERVICE_LABELS.kuljetus}</label>
-      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="asennus" ${sel.has("asennus") ? "checked" : ""}> ${SERVICE_LABELS.asennus}</label>
+      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="kuljetus" ${sel.has("kuljetus") ? "checked" : ""}> ${serviceLabel("kuljetus")}</label>
+      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="asennus" ${sel.has("asennus") ? "checked" : ""}> ${serviceLabel("asennus")}</label>
     </div></div>`;
 }
 
@@ -607,33 +599,33 @@ function renderScanResult(product) {
   document.getElementById("scan-result").innerHTML = `
     <div class="scan-product-card">
       <h4>${escapeHtml(product.name)}</h4>
-      <p class="order-meta">SKU: <strong>${escapeHtml(product.sku)}</strong></p>
-      <p>Valmistaja: <strong>${product.manufacturer ? escapeHtml(product.manufacturer) : "–"}</strong> · Tukkuri: <strong>${product.wholesaler ? escapeHtml(product.wholesaler) : "–"}</strong></p>
-      <p>Varastossa: <strong>${product.quantity_on_hand}</strong> · Vapaa: <strong>${product.quantity_available}</strong></p>
-      <button class="btn btn-secondary btn-sm" style="margin-top:0.5rem" onclick="openProductDetailModal(${product.id})">Lisätiedot</button>
-      <button class="btn btn-primary btn-sm" style="margin-top:0.5rem" onclick="openNewSalesModalWithProduct(${product.id})">Lisää tilaukseen</button>
+      <p class="order-meta">${t("common.sku")}: <strong>${escapeHtml(product.sku)}</strong></p>
+      <p>${t("common.manufacturer")}: <strong>${product.manufacturer ? escapeHtml(product.manufacturer) : t("common.empty")}</strong> · ${t("common.wholesaler")}: <strong>${product.wholesaler ? escapeHtml(product.wholesaler) : t("common.empty")}</strong></p>
+      <p>${t("common.onHand")}: <strong>${product.quantity_on_hand}</strong> · ${t("common.available")}: <strong>${product.quantity_available}</strong></p>
+      <button class="btn btn-secondary btn-sm" style="margin-top:0.5rem" onclick="openProductDetailModal(${product.id})">${t("common.details")}</button>
+      <button class="btn btn-primary btn-sm" style="margin-top:0.5rem" onclick="openNewSalesModalWithProduct(${product.id})">${t("modal.addToOrderBtn")}</button>
     </div>`;
 }
 
 function renderUnknownScanResult(sku) {
   document.getElementById("scan-result").innerHTML = `
     <div class="scan-product-card scan-unknown">
-      <h4>Tuotetta ei löydy</h4>
-      <p class="order-meta">Skannattu koodi: <strong>${sku}</strong></p>
-      <p class="hint">Tuotetta ei ole vielä järjestelmässä. Voit tallentaa sen varastoon.</p>
-      <button class="btn btn-primary btn-sm" style="margin-top:0.5rem" onclick="openUnknownProductModal('${sku.replace(/'/g, "\\'")}', 'scan')">Tallenna varastoon</button>
-      <button class="btn btn-secondary btn-sm" style="margin-top:0.5rem" onclick="openNewSalesModalWithSku('${sku.replace(/'/g, "\\'")}')">Lisää tilaukseen</button>
+      <h4>${t("scan.notFound")}</h4>
+      <p class="order-meta">${t("scan.scannedCodeLabel")}: <strong>${sku}</strong></p>
+      <p class="hint">${t("scan.notFoundHint")}</p>
+      <button class="btn btn-primary btn-sm" style="margin-top:0.5rem" onclick="openUnknownProductModal('${sku.replace(/'/g, "\\'")}', 'scan')">${t("scan.saveToStock")}</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:0.5rem" onclick="openNewSalesModalWithSku('${sku.replace(/'/g, "\\'")}')">${t("scan.addToOrder")}</button>
     </div>`;
 }
 
 function openUnknownProductModal(sku, context, onSaved) {
   openModal(
-    "Tallenna uusi tuote",
-    `<p>Skannattu koodi: <strong>${sku}</strong></p>
-     <div class="form-group"><label>Tuotenimi *</label><input id="uq-name" placeholder="Tuotteen nimi"></div>
-     <div class="form-group"><label>Alkusaldo</label><input type="number" id="uq-qty" min="0" value="0"></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveUnknownProduct('${sku.replace(/'/g, "\\'")}', '${context}')">Tallenna</button>`
+    t("modal.saveNewProduct"),
+    `<p>${t("scan.scannedCodeLabel")}: <strong>${sku}</strong></p>
+     <div class="form-group"><label>${t("modal.productName")}</label><input id="uq-name"></div>
+     <div class="form-group"><label>${t("modal.initialStock")}</label><input type="number" id="uq-qty" min="0" value="0"></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveUnknownProduct('${sku.replace(/'/g, "\\'")}', '${context}')">${t("common.save")}</button>`
   );
   window._unknownProductOnSaved = onSaved;
 }
@@ -642,7 +634,7 @@ async function saveUnknownProduct(sku, context) {
   const name = document.getElementById("uq-name").value.trim();
   const qty = parseInt(document.getElementById("uq-qty").value, 10) || 0;
   if (!name) {
-    showToast("Tuotenimi on pakollinen", "error");
+    showToast(t("toast.productNameRequired"), "error");
     return;
   }
   try {
@@ -652,7 +644,7 @@ async function saveUnknownProduct(sku, context) {
     });
     products = await api("/products");
     closeModal();
-    showToast(`Tuote ${product.name} tallennettu`);
+    showToast(t("toast.productSaved", { name: product.name }));
     if (context === "scan") {
       openProductDetailModal(product.id);
     } else if (typeof window._unknownProductOnSaved === "function") {
@@ -696,7 +688,7 @@ async function handleScanSearch() {
       sku,
       (product) => {
         if (input) input.value = "";
-        showToast(`Löytyi: ${product.name}`);
+        showToast(t("scan.found", { name: product.name }));
         openProductDetailModal(product.id);
       },
       (code) => {
@@ -720,9 +712,9 @@ async function renderScan() {
 
 function customerOptionsHtml(selectedId) {
   if (!customers.length) return "";
-  return `<div class="form-group"><label>Valitse asiakasrekisteristä</label>
+  return `<div class="form-group"><label>${t("modal.selectCustomer")}</label>
     <select id="so-customer-select" onchange="fillCustomerFromSelect()">
-      <option value="">– Valitse tai kirjoita uusi –</option>
+      <option value="">${t("modal.selectOrNew")}</option>
       ${customers.map((c) => `<option value="${c.id}" ${c.id === selectedId ? "selected" : ""}>${c.name} (${c.phone})</option>`).join("")}
     </select></div>`;
 }
@@ -750,12 +742,12 @@ async function openOrderTimeline(orderId) {
             </div>`
           )
           .join("")}</div>`
-      : '<p class="hint">Ei tapahtumia</p>';
+      : `<p class="hint">${t("movements.empty")}</p>`;
 
     openModal(
-      `Aikajana: ${order?.order_number || orderId}`,
+      t("modal.timeline", { number: order?.order_number || orderId }),
       html,
-      `<button class="btn btn-secondary" onclick="closeModal()">Sulje</button>`
+      `<button class="btn btn-secondary" onclick="closeModal()">${t("common.close")}</button>`
     );
   } catch (err) {
     showToast(err.message, "error");
@@ -764,14 +756,14 @@ async function openOrderTimeline(orderId) {
 
 function openNewCustomerModal() {
   openModal(
-    "Uusi asiakas",
-    `<div class="form-group"><label>Nimi *</label><input id="cu-name"></div>
-     <div class="form-group"><label>Puhelin *</label><input id="cu-phone" placeholder="0401234567"></div>
-     <div class="form-group"><label>Sähköposti</label><input id="cu-email"></div>
-     <div class="form-group"><label>Osoite</label><input id="cu-address"></div>
-     <div class="form-group"><label>Huomiot</label><textarea id="cu-notes" rows="2"></textarea></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveCustomer()">Tallenna</button>`
+    t("modal.newCustomer"),
+    `<div class="form-group"><label>${t("common.name")} *</label><input id="cu-name"></div>
+     <div class="form-group"><label>${t("common.phone")} *</label><input id="cu-phone" placeholder="0401234567"></div>
+     <div class="form-group"><label>${t("common.email")}</label><input id="cu-email"></div>
+     <div class="form-group"><label>${t("common.address")}</label><input id="cu-address"></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="cu-notes" rows="2"></textarea></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveCustomer()">${t("common.save")}</button>`
   );
 }
 
@@ -788,7 +780,7 @@ async function saveCustomer() {
       }),
     });
     closeModal();
-    showToast("Asiakas lisätty");
+    showToast(t("toast.customerAdded"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -799,14 +791,14 @@ function openEditCustomerModal(id) {
   const c = customers.find((x) => x.id === id);
   if (!c) return;
   openModal(
-    `Muokkaa: ${c.name}`,
-    `<div class="form-group"><label>Nimi *</label><input id="cu-name" value="${c.name}"></div>
-     <div class="form-group"><label>Puhelin *</label><input id="cu-phone" value="${c.phone}"></div>
-     <div class="form-group"><label>Sähköposti</label><input id="cu-email" value="${c.email || ""}"></div>
-     <div class="form-group"><label>Osoite</label><input id="cu-address" value="${c.address || ""}"></div>
-     <div class="form-group"><label>Huomiot</label><textarea id="cu-notes" rows="2">${c.notes || ""}</textarea></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveCustomerEdit(${id})">Tallenna</button>`
+    t("modal.editCustomer", { name: c.name }),
+    `<div class="form-group"><label>${t("common.name")} *</label><input id="cu-name" value="${c.name}"></div>
+     <div class="form-group"><label>${t("common.phone")} *</label><input id="cu-phone" value="${c.phone}"></div>
+     <div class="form-group"><label>${t("common.email")}</label><input id="cu-email" value="${c.email || ""}"></div>
+     <div class="form-group"><label>${t("common.address")}</label><input id="cu-address" value="${c.address || ""}"></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="cu-notes" rows="2">${c.notes || ""}</textarea></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveCustomerEdit(${id})">${t("common.save")}</button>`
   );
 }
 
@@ -823,7 +815,7 @@ async function saveCustomerEdit(id) {
       }),
     });
     closeModal();
-    showToast("Asiakas päivitetty");
+    showToast(t("toast.customerUpdated"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -834,7 +826,7 @@ function renderOrderLines(lines, showDelivered = false) {
   return lines
     .map((line) => {
       const extra = showDelivered
-        ? ` <span class="order-meta">(toimitettu ${line.quantity_delivered}/${line.quantity})</span>`
+        ? ` <span class="order-meta">(${t("orders.delivered")} ${line.quantity_delivered}/${line.quantity})</span>`
         : "";
       return `<div class="order-line"><span>${line.product_name} (${line.product_sku}) × ${line.quantity}${extra}</span></div>`;
     })
@@ -846,7 +838,7 @@ async function renderPurchases() {
   const container = document.getElementById("purchases-list");
 
   if (!purchaseOrders.length) {
-    container.innerHTML = '<div class="empty-state">Ei ostotilauksia</div>';
+    container.innerHTML = `<div class="empty-state">${t("purchases.empty")}</div>`;
     return;
   }
 
@@ -864,10 +856,10 @@ async function renderPurchases() {
         <div class="order-lines">${order.lines
           .map(
             (line) =>
-              `<div class="order-line"><span>${line.product_name} (${line.product_sku}) × ${line.quantity}</span><span class="order-meta">vastaanotettu ${line.quantity_received}/${line.quantity}</span></div>`
+              `<div class="order-line"><span>${line.product_name} (${line.product_sku}) × ${line.quantity}</span><span class="order-meta">${t("orders.received")} ${line.quantity_received}/${line.quantity}</span></div>`
           )
           .join("")}</div>
-        ${canReceive ? `<div class="order-actions"><button class="btn btn-success btn-sm" onclick="openReceiveModal(${order.id})">Vastaanota</button></div>` : ""}
+        ${canReceive ? `<div class="order-actions"><button class="btn btn-success btn-sm" onclick="openReceiveModal(${order.id})">${t("purchases.receive")}</button></div>` : ""}
       </div>`;
     })
     .join("");
@@ -881,14 +873,14 @@ async function renderMovements() {
           (m) => `<tr>
             <td>${formatDate(m.created_at)}</td>
             <td>${m.product_name} (${m.product_sku})</td>
-            <td>${MOVEMENT_LABELS[m.movement_type] || m.movement_type}</td>
+            <td>${movementLabel(m.movement_type)}</td>
             <td>${m.quantity > 0 ? "+" : ""}${m.quantity}</td>
             <td>${m.reference || "-"}</td>
             <td>${m.notes || "-"}</td>
           </tr>`
         )
         .join("")
-    : `<tr><td colspan="6" class="empty-state">Ei tapahtumia</td></tr>`;
+    : `<tr><td colspan="6" class="empty-state">${t("movements.empty")}</td></tr>`;
 }
 
 function openModal(title, bodyHtml, footerHtml) {
@@ -903,9 +895,89 @@ function closeModal() {
   document.getElementById("modal").classList.add("hidden");
 }
 
+async function loadSeedData() {
+  await api("/seed", { method: "POST" });
+  showToast(t("toast.seedLoaded"));
+  await refreshAll();
+}
+
+function openSettingsModal() {
+  const canInstall = Boolean(deferredInstallPrompt);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const installHint = !canInstall && isMobile && !isStandaloneApp();
+  const lang = getLang();
+  const theme = getTheme();
+
+  openModal(
+    t("settings.title"),
+    `<div class="settings-list">
+      <div class="settings-section">
+        <span class="settings-label">${t("settings.language")}</span>
+        <div class="option-group" id="settings-lang-group">
+          <button type="button" class="option-btn ${lang === "fi" ? "active" : ""}" data-lang="fi">${t("settings.langFi")}</button>
+          <button type="button" class="option-btn ${lang === "sv" ? "active" : ""}" data-lang="sv">${t("settings.langSv")}</button>
+          <button type="button" class="option-btn ${lang === "en" ? "active" : ""}" data-lang="en">${t("settings.langEn")}</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <span class="settings-label">${t("settings.theme")}</span>
+        <div class="option-group" id="settings-theme-group">
+          <button type="button" class="option-btn ${theme === "light" ? "active" : ""}" data-theme="light">${t("settings.themeLight")}</button>
+          <button type="button" class="option-btn ${theme === "dark" ? "active" : ""}" data-theme="dark">${t("settings.themeDark")}</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <button type="button" class="btn btn-secondary btn-block" id="settings-seed-btn">${t("settings.seed")}</button>
+      </div>
+      ${
+        canInstall
+          ? `<div class="settings-section"><button type="button" class="btn btn-primary btn-block" id="settings-install-btn">${t("settings.install")}</button></div>`
+          : ""
+      }
+      ${installHint ? `<p class="hint">${t("settings.installHint")}</p>` : ""}
+    </div>`,
+    `<button type="button" class="btn btn-secondary" onclick="closeModal()">${t("common.close")}</button>`
+  );
+
+  document.querySelectorAll("#settings-lang-group .option-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setLang(btn.dataset.lang);
+      applyLanguageChange();
+      openSettingsModal();
+    });
+  });
+
+  document.querySelectorAll("#settings-theme-group .option-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setTheme(btn.dataset.theme);
+      document.querySelectorAll("#settings-theme-group .option-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.theme === btn.dataset.theme);
+      });
+    });
+  });
+
+  document.getElementById("settings-seed-btn")?.addEventListener("click", async () => {
+    try {
+      await loadSeedData();
+      closeModal();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  });
+
+  document.getElementById("settings-install-btn")?.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    closeModal();
+    showToast(t("toast.appInstalled"));
+  });
+}
+
 function formatProductLabel(p) {
   const mfr = p.manufacturer ? ` · ${p.manufacturer}` : "";
-  return `${p.name} (${p.sku})${mfr} – vapaa ${p.quantity_available}`;
+  return `${p.name} (${p.sku})${mfr} – ${t("product.labelFree")} ${p.quantity_available}`;
 }
 
 function productOptions() {
@@ -940,7 +1012,7 @@ function productDisplay(value) {
 
 function formatPrice(value) {
   if (value == null || value === "") return "–";
-  return new Intl.NumberFormat("fi-FI", { style: "currency", currency: "EUR" }).format(value);
+  return new Intl.NumberFormat(getLocale(), { style: "currency", currency: "EUR" }).format(value);
 }
 
 function parsePriceInput(id) {
@@ -958,27 +1030,27 @@ function openProductDetailModal(productId) {
     escapeHtml(p.name),
     `<div class="product-detail">
       <dl class="detail-list">
-        <dt>SKU</dt><dd><code>${escapeHtml(p.sku)}</code></dd>
-        <dt>Valmistaja</dt><dd>${productDisplay(p.manufacturer)}</dd>
-        <dt>Tukkuri</dt><dd>${productDisplay(p.wholesaler)}</dd>
-        <dt>Ostohinta</dt><dd>${formatPrice(p.purchase_price)}</dd>
-        <dt>Myyntihinta</dt><dd>${formatPrice(p.sale_price)}</dd>
-        <dt>Kuvaus</dt><dd>${productDisplay(p.description)}</dd>
-        <dt>Yksikkö</dt><dd>${escapeHtml(p.unit)}</dd>
+        <dt>${t("common.sku")}</dt><dd><code>${escapeHtml(p.sku)}</code></dd>
+        <dt>${t("common.manufacturer")}</dt><dd>${productDisplay(p.manufacturer)}</dd>
+        <dt>${t("common.wholesaler")}</dt><dd>${productDisplay(p.wholesaler)}</dd>
+        <dt>${t("common.purchasePrice")}</dt><dd>${formatPrice(p.purchase_price)}</dd>
+        <dt>${t("common.salePrice")}</dt><dd>${formatPrice(p.sale_price)}</dd>
+        <dt>${t("common.description")}</dt><dd>${productDisplay(p.description)}</dd>
+        <dt>${t("common.unit")}</dt><dd>${escapeHtml(p.unit)}</dd>
       </dl>
       <hr style="border-color:var(--border);margin:1rem 0">
       <dl class="detail-list">
-        <dt>Varastossa</dt><dd><strong>${p.quantity_on_hand}</strong></dd>
-        <dt>Tilattu</dt><dd>${p.quantity_ordered}</dd>
-        <dt>Varattu</dt><dd>${p.quantity_reserved}</dd>
-        <dt>Vapaa</dt><dd><strong>${p.quantity_available}</strong></dd>
-        <dt>Minimivarasto</dt><dd>${p.min_stock_level}</dd>
-        <dt>Tila</dt><dd><span class="badge ${low ? "low" : "ok"}">${low ? "Vähissä" : "OK"}</span></dd>
+        <dt>${t("common.onHand")}</dt><dd><strong>${p.quantity_on_hand}</strong></dd>
+        <dt>${t("common.ordered")}</dt><dd>${p.quantity_ordered}</dd>
+        <dt>${t("common.reserved")}</dt><dd>${p.quantity_reserved}</dd>
+        <dt>${t("common.available")}</dt><dd><strong>${p.quantity_available}</strong></dd>
+        <dt>${t("common.minStock")}</dt><dd>${p.min_stock_level}</dd>
+        <dt>${t("common.status")}</dt><dd><span class="badge ${low ? "low" : "ok"}">${stockBadgeLabel(low)}</span></dd>
       </dl>
     </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Sulje</button>
-     <button class="btn btn-primary" onclick="openEditProductModal(${p.id})">Muokkaa</button>
-     <button class="btn btn-secondary" onclick="openNewSalesModalWithProduct(${p.id}); closeModal();">Lisää tilaukseen</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.close")}</button>
+     <button class="btn btn-primary" onclick="openEditProductModal(${p.id})">${t("common.edit")}</button>
+     <button class="btn btn-secondary" onclick="openNewSalesModalWithProduct(${p.id}); closeModal();">${t("modal.addToOrderBtn")}</button>`
   );
 }
 
@@ -986,27 +1058,27 @@ function openEditProductModal(productId) {
   const p = products.find((x) => x.id === productId);
   if (!p) return;
   openModal(
-    `Muokkaa: ${escapeHtml(p.name)}`,
-    `<div class="form-group"><label>SKU</label><input value="${escapeHtml(p.sku)}" disabled></div>
-     <div class="form-group"><label>Nimi *</label><input id="ep-name" value="${escapeHtml(p.name)}"></div>
-     <div class="form-group"><label>Valmistaja</label><input id="ep-manufacturer" value="${escapeHtml(p.manufacturer || "")}" placeholder="Esim. FixPlus"></div>
-     <div class="form-group"><label>Tukkuri</label><input id="ep-wholesaler" value="${escapeHtml(p.wholesaler || "")}" placeholder="Esim. Rautakauppa Oy"></div>
+    t("modal.editProduct", { name: escapeHtml(p.name) }),
+    `<div class="form-group"><label>${t("common.sku")}</label><input value="${escapeHtml(p.sku)}" disabled></div>
+     <div class="form-group"><label>${t("common.name")} *</label><input id="ep-name" value="${escapeHtml(p.name)}"></div>
+     <div class="form-group"><label>${t("common.manufacturer")}</label><input id="ep-manufacturer" value="${escapeHtml(p.manufacturer || "")}"></div>
+     <div class="form-group"><label>${t("common.wholesaler")}</label><input id="ep-wholesaler" value="${escapeHtml(p.wholesaler || "")}"></div>
      <div class="form-row">
-       <div class="form-group"><label>Ostohinta (€)</label><input type="number" id="ep-purchase-price" min="0" step="0.01" value="${p.purchase_price ?? ""}" placeholder="0.00"></div>
-       <div class="form-group"><label>Myyntihinta (€)</label><input type="number" id="ep-sale-price" min="0" step="0.01" value="${p.sale_price ?? ""}" placeholder="0.00"></div>
+       <div class="form-group"><label>${t("common.purchasePrice")} (€)</label><input type="number" id="ep-purchase-price" min="0" step="0.01" value="${p.purchase_price ?? ""}" placeholder="0.00"></div>
+       <div class="form-group"><label>${t("common.salePrice")} (€)</label><input type="number" id="ep-sale-price" min="0" step="0.01" value="${p.sale_price ?? ""}" placeholder="0.00"></div>
      </div>
-     <div class="form-group"><label>Kuvaus</label><textarea id="ep-desc" rows="2">${escapeHtml(p.description || "")}</textarea></div>
-     <div class="form-group"><label>Yksikkö</label><input id="ep-unit" value="${escapeHtml(p.unit)}"></div>
-     <div class="form-group"><label>Minimivarasto</label><input type="number" id="ep-min" min="0" value="${p.min_stock_level}"></div>`,
-    `<button class="btn btn-secondary" onclick="openProductDetailModal(${p.id})">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveProductEdit(${p.id})">Tallenna</button>`
+     <div class="form-group"><label>${t("common.description")}</label><textarea id="ep-desc" rows="2">${escapeHtml(p.description || "")}</textarea></div>
+     <div class="form-group"><label>${t("common.unit")}</label><input id="ep-unit" value="${escapeHtml(p.unit)}"></div>
+     <div class="form-group"><label>${t("common.minStock")}</label><input type="number" id="ep-min" min="0" value="${p.min_stock_level}"></div>`,
+    `<button class="btn btn-secondary" onclick="openProductDetailModal(${p.id})">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveProductEdit(${p.id})">${t("common.save")}</button>`
   );
 }
 
 async function saveProductEdit(productId) {
   const name = document.getElementById("ep-name").value.trim();
   if (!name) {
-    showToast("Nimi on pakollinen", "error");
+    showToast(t("toast.nameRequired"), "error");
     return;
   }
   try {
@@ -1025,7 +1097,7 @@ async function saveProductEdit(productId) {
     });
     products = await api("/products");
     closeModal();
-    showToast("Tuote päivitetty");
+    showToast(t("toast.productUpdated"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1034,20 +1106,20 @@ async function saveProductEdit(productId) {
 
 function openNewProductModal() {
   openModal(
-    "Uusi tuote",
-    `<div class="form-group"><label>SKU *</label><input id="np-sku"></div>
-     <div class="form-group"><label>Nimi *</label><input id="np-name"></div>
-     <div class="form-group"><label>Valmistaja</label><input id="np-manufacturer" placeholder="Esim. FixPlus"></div>
-     <div class="form-group"><label>Tukkuri</label><input id="np-wholesaler" placeholder="Esim. Rautakauppa Oy"></div>
+    t("modal.newProduct"),
+    `<div class="form-group"><label>${t("common.sku")} *</label><input id="np-sku"></div>
+     <div class="form-group"><label>${t("common.name")} *</label><input id="np-name"></div>
+     <div class="form-group"><label>${t("common.manufacturer")}</label><input id="np-manufacturer"></div>
+     <div class="form-group"><label>${t("common.wholesaler")}</label><input id="np-wholesaler"></div>
      <div class="form-row">
-       <div class="form-group"><label>Ostohinta (€)</label><input type="number" id="np-purchase-price" min="0" step="0.01" placeholder="0.00"></div>
-       <div class="form-group"><label>Myyntihinta (€)</label><input type="number" id="np-sale-price" min="0" step="0.01" placeholder="0.00"></div>
+       <div class="form-group"><label>${t("common.purchasePrice")} (€)</label><input type="number" id="np-purchase-price" min="0" step="0.01" placeholder="0.00"></div>
+       <div class="form-group"><label>${t("common.salePrice")} (€)</label><input type="number" id="np-sale-price" min="0" step="0.01" placeholder="0.00"></div>
      </div>
-     <div class="form-group"><label>Kuvaus</label><textarea id="np-desc" rows="2"></textarea></div>
-     <div class="form-group"><label>Alkusaldo</label><input type="number" id="np-qty" min="0" value="0"></div>
-     <div class="form-group"><label>Minimivarasto</label><input type="number" id="np-min" min="0" value="0"></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveProduct()">Tallenna</button>`
+     <div class="form-group"><label>${t("common.description")}</label><textarea id="np-desc" rows="2"></textarea></div>
+     <div class="form-group"><label>${t("modal.initialStock")}</label><input type="number" id="np-qty" min="0" value="0"></div>
+     <div class="form-group"><label>${t("common.minStock")}</label><input type="number" id="np-min" min="0" value="0"></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveProduct()">${t("common.save")}</button>`
   );
 }
 
@@ -1068,7 +1140,7 @@ async function saveProduct() {
       }),
     });
     closeModal();
-    showToast("Tuote luotu");
+    showToast(t("toast.productCreated"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1082,32 +1154,32 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   openModal(
-    "Uusi tilaus",
+    t("modal.newOrder"),
     `${customerOptionsHtml()}
-     <div class="form-group"><label>Asiakas *</label><input id="so-customer"></div>
-     <div class="form-group"><label>Puhelinnumero *</label><input id="so-phone" type="tel" placeholder="0401234567" required></div>
+     <div class="form-group"><label>${t("common.customer")} *</label><input id="so-customer"></div>
+     <div class="form-group"><label>${t("modal.phoneRequired")}</label><input id="so-phone" type="tel" placeholder="0401234567" required></div>
      <input type="hidden" id="so-customer-id">
-     <div class="form-group"><label>Huomiot</label><textarea id="so-notes" rows="2"></textarea></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="so-notes" rows="2"></textarea></div>
      ${servicesPickerHtml("new")}
      <div class="form-group">
-       <label>Skannaa tuote (SKU)</label>
+       <label>${t("modal.scanProduct")}</label>
        <div class="scan-input-wrap scan-input-wrap-modal">
-         <input type="text" id="so-scan" class="scan-input" placeholder="Skannaa viivakoodi...">
-         <button type="button" class="btn btn-secondary btn-sm" id="so-scan-cancel">Peruuta</button>
+         <input type="text" id="so-scan" class="scan-input" placeholder="${t("scan.placeholder")}">
+         <button type="button" class="btn btn-secondary btn-sm" id="so-scan-cancel">${t("common.cancel")}</button>
        </div>
        <div id="so-camera-reader" class="camera-reader camera-reader-modal hidden"></div>
-       <button type="button" class="btn btn-secondary btn-sm" id="so-camera-toggle-btn">Käynnistä kamera</button>
+       <button type="button" class="btn btn-secondary btn-sm" id="so-camera-toggle-btn">${t("scan.startCamera")}</button>
      </div>
-     <div class="form-group"><label>Tilausrivit</label><div id="so-lines"></div>
-     <button type="button" class="btn btn-secondary btn-sm" onclick="addLineRow('so-lines')">+ Lisää rivi</button></div>
+     <div class="form-group"><label>${t("modal.orderLines")}</label><div id="so-lines"></div>
+     <button type="button" class="btn btn-secondary btn-sm" onclick="addLineRow('so-lines')">${t("modal.addLine")}</button></div>
      <hr style="border-color:var(--border);margin:1rem 0">
      ${fulfillmentPickerHtml("new", "toimitus")}
      <div class="form-group">
-       <label id="new-date-label">Toimituspäivä *</label>
+       <label id="new-date-label">${t("orders.deliveryDate")}</label>
        <input type="date" id="so-scheduled-date" value="${tomorrow.toISOString().slice(0, 10)}" required>
      </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveSalesOrder()">Tallenna tilaus</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveSalesOrder()">${t("modal.saveOrder")}</button>`
   );
   setupFulfillmentPicker("toimitus", "new");
   addLineRow("so-lines");
@@ -1170,11 +1242,11 @@ async function saveSalesOrder() {
   const customer = document.getElementById("so-customer").value.trim();
   const phone = document.getElementById("so-phone").value.trim();
   if (!customer) {
-    showToast("Asiakas on pakollinen", "error");
+    showToast(t("toast.customerRequired"), "error");
     return;
   }
   if (!phone || phone.length < 5) {
-    showToast("Puhelinnumero on pakollinen", "error");
+    showToast(t("toast.phoneRequired"), "error");
     return;
   }
   const customerIdRaw = document.getElementById("so-customer-id").value;
@@ -1184,13 +1256,13 @@ async function saveSalesOrder() {
     quantity: parseInt(row.querySelector(".line-qty").value, 10),
   }));
   if (!lines.length) {
-    showToast("Lisää vähintään yksi tilausrivi", "error");
+    showToast(t("toast.orderLineRequired"), "error");
     return;
   }
   const fulfillment = document.querySelector('input[name="new-fulfillment"]:checked')?.value || "toimitus";
   const scheduledDate = document.getElementById("so-scheduled-date").value;
   if (!scheduledDate) {
-    showToast("Valitse päivämäärä", "error");
+    showToast(t("toast.dateRequired"), "error");
     return;
   }
 
@@ -1209,7 +1281,7 @@ async function saveSalesOrder() {
       }),
     });
     closeModal();
-    showToast(`Tilaus ${order.order_number} luotu`);
+    showToast(t("toast.orderCreated", { number: order.order_number }));
     switchView("orders");
     await refreshAll();
   } catch (err) {
@@ -1222,19 +1294,19 @@ function openEditOrderModal(orderId) {
   if (!order) return;
 
   openModal(
-    `Muokkaa ${order.order_number}`,
-    `<div class="form-group"><label>Asiakas *</label><input id="edit-customer" value="${order.customer}"></div>
-     <div class="form-group"><label>Puhelinnumero *</label><input id="edit-phone" type="tel" value="${order.customer_phone || ""}"></div>
-     <div class="form-group"><label>Huomiot</label><textarea id="edit-notes" rows="2">${order.notes || ""}</textarea></div>
+    `${t("common.edit")} ${order.order_number}`,
+    `<div class="form-group"><label>${t("common.customer")} *</label><input id="edit-customer" value="${order.customer}"></div>
+     <div class="form-group"><label>${t("modal.phoneRequired")}</label><input id="edit-phone" type="tel" value="${order.customer_phone || ""}"></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="edit-notes" rows="2">${order.notes || ""}</textarea></div>
      ${servicesPickerHtml("edit", order.services || [])}
-     <p class="hint">Tuotteet: ${order.product_summary || "-"}</p>
+     <p class="hint">${t("common.products")}: ${order.product_summary || "-"}</p>
      ${fulfillmentPickerHtml("edit", order.fulfillment_type || "toimitus")}
      <div class="form-group">
-       <label id="edit-date-label">Toimituspäivä *</label>
+       <label id="edit-date-label">${t("orders.deliveryDate")}</label>
        <input type="date" id="edit-scheduled-date" value="${toInputDate(order.scheduled_date)}" required>
      </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="saveOrderEdit(${orderId})">Tallenna muutokset</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="saveOrderEdit(${orderId})">${t("modal.saveChanges")}</button>`
   );
   setupFulfillmentPicker(order.fulfillment_type || "toimitus", "edit");
 }
@@ -1244,7 +1316,7 @@ async function saveOrderEdit(orderId) {
   const phone = document.getElementById("edit-phone").value.trim();
   const scheduledDate = document.getElementById("edit-scheduled-date").value;
   if (!customer || !phone || !scheduledDate) {
-    showToast("Asiakas, puhelin ja päivämäärä ovat pakollisia", "error");
+    showToast(t("toast.orderFieldsRequired"), "error");
     return;
   }
   const fulfillment = document.querySelector('input[name="edit-fulfillment"]:checked')?.value || "toimitus";
@@ -1262,7 +1334,7 @@ async function saveOrderEdit(orderId) {
       }),
     });
     closeModal();
-    showToast("Tilaus päivitetty");
+    showToast(t("toast.orderUpdated"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1271,17 +1343,17 @@ async function saveOrderEdit(orderId) {
 
 function openNewPurchaseModal() {
   if (!products.length) {
-    showToast("Luo ensin tuotteita", "error");
+    showToast(t("toast.createProductsFirst"), "error");
     return;
   }
   openModal(
-    "Uusi ostotilaus",
-    `<div class="form-group"><label>Toimittaja *</label><input id="po-supplier"></div>
-     <div class="form-group"><label>Huomiot</label><textarea id="po-notes" rows="2"></textarea></div>
-     <div class="form-group"><label>Rivit</label><div id="po-lines"></div>
-     <button type="button" class="btn btn-secondary btn-sm" onclick="addLineRow('po-lines')">+ Lisää rivi</button></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="savePurchaseOrder()">Tallenna ostotilaus</button>`
+    t("modal.newPurchase"),
+    `<div class="form-group"><label>${t("modal.supplier")} *</label><input id="po-supplier"></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="po-notes" rows="2"></textarea></div>
+     <div class="form-group"><label>${t("modal.lines")}</label><div id="po-lines"></div>
+     <button type="button" class="btn btn-secondary btn-sm" onclick="addLineRow('po-lines')">${t("modal.addLine")}</button></div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="savePurchaseOrder()">${t("modal.savePurchase")}</button>`
   );
   addLineRow("po-lines");
 }
@@ -1302,7 +1374,7 @@ async function savePurchaseOrder() {
       }),
     });
     closeModal();
-    showToast("Ostotilaus luotu – tilattu saldo päivitetty");
+    showToast(t("toast.purchaseCreated"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1312,7 +1384,7 @@ async function savePurchaseOrder() {
 async function approveSalesOrder(id) {
   try {
     await api(`/sales-orders/${id}/approve`, { method: "POST" });
-    showToast("Tilaus hyväksytty – tuotteet varattu");
+    showToast(t("toast.orderApproved"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1320,10 +1392,10 @@ async function approveSalesOrder(id) {
 }
 
 async function cancelSalesOrder(id) {
-  if (!confirm("Perutaanko tilaus?")) return;
+  if (!confirm(t("toast.confirmCancel"))) return;
   try {
     await api(`/sales-orders/${id}/cancel`, { method: "POST" });
-    showToast("Tilaus peruttu");
+    showToast(t("toast.orderCancelled"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1333,26 +1405,26 @@ async function cancelSalesOrder(id) {
 function openDeliverModal(orderId) {
   const order = salesOrders.find((o) => o.id === orderId);
   if (!order) {
-    showToast("Lataa tilaukset uudelleen", "error");
+    showToast(t("toast.reloadOrders"), "error");
     return;
   }
 
-  const actionLabel = order.fulfillment_type === "nouto" ? "Nouda" : "Toimita";
+  const actionLabel = order.fulfillment_type === "nouto" ? t("orders.pickup") : t("orders.deliver");
   const linesHtml = order.lines
     .filter((l) => l.quantity_delivered < l.quantity)
     .map(
       (line) => `<div class="line-row">
-        <span>${line.product_name} (jäljellä ${line.quantity - line.quantity_delivered})</span>
+        <span>${line.product_name} (${t("modal.remaining")} ${line.quantity - line.quantity_delivered})</span>
         <input type="number" class="deliver-qty" data-line-id="${line.id}" min="1" max="${line.quantity - line.quantity_delivered}" value="${line.quantity - line.quantity_delivered}">
       </div>`
     )
     .join("");
 
   openModal(
-    `${actionLabel} ${order.order_number}`,
-    `<p class="hint">${FULFILLMENT_LABELS[order.fulfillment_type]} ${formatDateOnly(order.scheduled_date)}. Poistaa tuotteet varastosaldosta.</p>${linesHtml}`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-primary" onclick="deliverOrder(${orderId})">Vahvista</button>`
+    t("modal.deliverTitle", { action: actionLabel, number: order.order_number }),
+    `<p class="hint">${t("modal.deliverHint", { method: fulfillmentLabel(order.fulfillment_type), date: formatDateOnly(order.scheduled_date) })}</p>${linesHtml}`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-primary" onclick="deliverOrder(${orderId})">${t("modal.confirm")}</button>`
   );
 }
 
@@ -1368,7 +1440,7 @@ async function deliverOrder(orderId) {
       body: JSON.stringify({ lines }),
     });
     closeModal();
-    showToast("Tilaus käsitelty – saldo päivitetty");
+    showToast(t("toast.orderProcessed"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1383,17 +1455,17 @@ function openReceiveModal(orderId) {
     .filter((l) => l.quantity_received < l.quantity)
     .map(
       (line) => `<div class="line-row">
-        <span>${line.product_name} (jäljellä ${line.quantity - line.quantity_received})</span>
+        <span>${line.product_name} (${t("modal.remaining")} ${line.quantity - line.quantity_received})</span>
         <input type="number" class="receive-qty" data-line-id="${line.id}" min="1" max="${line.quantity - line.quantity_received}" value="${line.quantity - line.quantity_received}">
       </div>`
     )
     .join("");
 
   openModal(
-    `Vastaanota ${order.order_number}`,
-    `<p class="hint">Vastaanotto siirtää määrän tilatusta varastosaldoon.</p>${linesHtml}`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Peruuta</button>
-     <button class="btn btn-success" onclick="receiveOrder(${orderId})">Vahvista vastaanotto</button>`
+    t("modal.receiveTitle", { number: order.order_number }),
+    `<p class="hint">${t("modal.receiveHint")}</p>${linesHtml}`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+     <button class="btn btn-success" onclick="receiveOrder(${orderId})">${t("modal.confirmReceive")}</button>`
   );
 }
 
@@ -1409,7 +1481,7 @@ async function receiveOrder(orderId) {
       body: JSON.stringify({ lines }),
     });
     closeModal();
-    showToast("Vastaanotto kirjattu – saldo päivitetty");
+    showToast(t("toast.receiveLogged"));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1425,9 +1497,9 @@ async function handleImport(file) {
       ? `<ul>${result.errors.map((e) => `<li>${e}</li>`).join("")}</ul>`
       : "";
     document.getElementById("import-result").innerHTML = `
-      <p><strong>Luotu:</strong> ${result.created} · <strong>Päivitetty:</strong> ${result.updated}</p>
+      <p><strong>${t("import.created")}:</strong> ${result.created} · <strong>${t("import.updated")}:</strong> ${result.updated}</p>
       ${errors}`;
-    showToast(`Tuonti valmis: ${result.created + result.updated} tuotetta`);
+    showToast(t("toast.importDone", { count: result.created + result.updated }));
     await refreshAll();
   } catch (err) {
     showToast(err.message, "error");
@@ -1439,7 +1511,7 @@ async function downloadTemplate() {
     const res = await fetch(`${API}/import/template`, {
       headers: { Authorization: `Bearer ${authToken}` },
     });
-    if (!res.ok) throw new Error("Mallin lataus epäonnistui");
+    if (!res.ok) throw new Error(t("toast.templateFailed"));
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1510,13 +1582,13 @@ document.getElementById("import-file").addEventListener("change", (e) => {
 
 document.getElementById("seed-btn").addEventListener("click", async () => {
   try {
-    await api("/seed", { method: "POST" });
-    showToast("Esimerkkidata ladattu");
-    await refreshAll();
+    await loadSeedData();
   } catch (err) {
     showToast(err.message, "error");
   }
 });
+
+document.getElementById("settings-btn").addEventListener("click", openSettingsModal);
 
 window.approveSalesOrder = approveSalesOrder;
 window.cancelSalesOrder = cancelSalesOrder;
@@ -1543,6 +1615,8 @@ window.fillCustomerFromSelect = fillCustomerFromSelect;
 window.openEditCustomerModal = openEditCustomerModal;
 window.saveCustomer = saveCustomer;
 window.saveCustomerEdit = saveCustomerEdit;
+
+initPreferences();
 
 if (authToken && currentEmployee) {
   showApp();
