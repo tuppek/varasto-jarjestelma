@@ -44,3 +44,7 @@ def run_migrations() -> None:
                 conn.execute(text("ALTER TABLE products ADD COLUMN manufacturer VARCHAR(255)"))
             if "wholesaler" not in cols:
                 conn.execute(text("ALTER TABLE products ADD COLUMN wholesaler VARCHAR(255)"))
+            if "purchase_price" not in cols:
+                conn.execute(text("ALTER TABLE products ADD COLUMN purchase_price REAL"))
+            if "sale_price" not in cols:
+                conn.execute(text("ALTER TABLE products ADD COLUMN sale_price REAL"))

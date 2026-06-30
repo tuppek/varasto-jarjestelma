@@ -19,6 +19,8 @@ PRODUCT_HEADERS = {
     "min_stock_level": ["min_stock_level", "minimi", "min_varasto", "hälytysraja", "halytysraja"],
     "manufacturer": ["manufacturer", "valmistaja", "brand", "merkki"],
     "wholesaler": ["wholesaler", "tukkuri", "supplier", "toimittaja", "jakelija"],
+    "purchase_price": ["purchase_price", "ostohinta", "osto_hinta", "ostohinta_eur"],
+    "sale_price": ["sale_price", "myyntihinta", "myynti_hinta", "myyntihinta_eur", "hinta"],
 }
 
 
@@ -80,6 +82,8 @@ def import_products_from_excel(db: Session, file_bytes: bytes) -> dict:
                 "min_stock_level",
                 "manufacturer",
                 "wholesaler",
+                "purchase_price",
+                "sale_price",
             ):
                 if field in col_map:
                     raw = row[col_map[field]]
@@ -87,6 +91,8 @@ def import_products_from_excel(db: Session, file_bytes: bytes) -> dict:
                         continue
                     if field in ("quantity_on_hand", "quantity_ordered", "quantity_reserved", "min_stock_level"):
                         data[field] = int(float(raw))
+                    elif field in ("purchase_price", "sale_price"):
+                        data[field] = float(raw)
                     else:
                         data[field] = str(raw).strip()
 
@@ -121,11 +127,13 @@ def create_sample_template() -> bytes:
             "Minimi",
             "Valmistaja",
             "Tukkuri",
+            "Ostohinta",
+            "Myyntihinta",
         ]
     )
-    ws.append(["SKU-001", "Ruuvi M6", "Teräsruuvi", "kpl", 100, 0, 0, 20, "FixPlus", "Rautakauppa Oy"])
-    ws.append(["SKU-002", "Mutteri M6", "Teräsmutteri", "kpl", 80, 50, 10, 15, "FixPlus", "Rautakauppa Oy"])
-    ws.append(["SKU-003", "Kiinnike", "Seinäkiinnike", "kpl", 25, 100, 5, 10, "BuildPro", "Tukkuri Nord"])
+    ws.append(["SKU-001", "Ruuvi M6", "Teräsruuvi", "kpl", 100, 0, 0, 20, "FixPlus", "Rautakauppa Oy", 0.15, 0.35])
+    ws.append(["SKU-002", "Mutteri M6", "Teräsmutteri", "kpl", 80, 50, 10, 15, "FixPlus", "Rautakauppa Oy", 0.12, 0.29])
+    ws.append(["SKU-003", "Kiinnike", "Seinäkiinnike", "kpl", 25, 100, 5, 10, "BuildPro", "Tukkuri Nord", 2.5, 4.9])
 
     buffer = BytesIO()
     wb.save(buffer)

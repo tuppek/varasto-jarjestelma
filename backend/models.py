@@ -4,7 +4,7 @@ import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -86,6 +86,8 @@ class Product(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     manufacturer: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     wholesaler: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    purchase_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sale_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     unit: Mapped[str] = mapped_column(String(32), default="kpl")
     quantity_on_hand: Mapped[int] = mapped_column(Integer, default=0)
     quantity_ordered: Mapped[int] = mapped_column(Integer, default=0)

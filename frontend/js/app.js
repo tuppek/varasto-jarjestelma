@@ -466,6 +466,10 @@ function renderProductCard(p) {
       <div><dt>Valmistaja</dt><dd>${mfr}</dd></div>
       <div><dt>Tukkuri</dt><dd>${wholesaler}</dd></div>
     </dl>
+    <div class="product-card-prices">
+      <span>Osto <strong>${formatPrice(p.purchase_price)}</strong></span>
+      <span>Myynti <strong>${formatPrice(p.sale_price)}</strong></span>
+    </div>
     <div class="product-card-stock">
       <span>Varastossa <strong>${p.quantity_on_hand}</strong></span>
       <span>Vapaa <strong>${p.quantity_available}</strong></span>
@@ -934,6 +938,18 @@ function productDisplay(value) {
   return value && String(value).trim() ? escapeHtml(value) : '<span class="text-muted">–</span>';
 }
 
+function formatPrice(value) {
+  if (value == null || value === "") return "–";
+  return new Intl.NumberFormat("fi-FI", { style: "currency", currency: "EUR" }).format(value);
+}
+
+function parsePriceInput(id) {
+  const raw = document.getElementById(id)?.value.trim();
+  if (!raw) return null;
+  const n = parseFloat(raw.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
 function openProductDetailModal(productId) {
   const p = products.find((x) => x.id === productId);
   if (!p) return;
@@ -945,6 +961,8 @@ function openProductDetailModal(productId) {
         <dt>SKU</dt><dd><code>${escapeHtml(p.sku)}</code></dd>
         <dt>Valmistaja</dt><dd>${productDisplay(p.manufacturer)}</dd>
         <dt>Tukkuri</dt><dd>${productDisplay(p.wholesaler)}</dd>
+        <dt>Ostohinta</dt><dd>${formatPrice(p.purchase_price)}</dd>
+        <dt>Myyntihinta</dt><dd>${formatPrice(p.sale_price)}</dd>
         <dt>Kuvaus</dt><dd>${productDisplay(p.description)}</dd>
         <dt>Yksikkö</dt><dd>${escapeHtml(p.unit)}</dd>
       </dl>
@@ -973,6 +991,10 @@ function openEditProductModal(productId) {
      <div class="form-group"><label>Nimi *</label><input id="ep-name" value="${escapeHtml(p.name)}"></div>
      <div class="form-group"><label>Valmistaja</label><input id="ep-manufacturer" value="${escapeHtml(p.manufacturer || "")}" placeholder="Esim. FixPlus"></div>
      <div class="form-group"><label>Tukkuri</label><input id="ep-wholesaler" value="${escapeHtml(p.wholesaler || "")}" placeholder="Esim. Rautakauppa Oy"></div>
+     <div class="form-row">
+       <div class="form-group"><label>Ostohinta (€)</label><input type="number" id="ep-purchase-price" min="0" step="0.01" value="${p.purchase_price ?? ""}" placeholder="0.00"></div>
+       <div class="form-group"><label>Myyntihinta (€)</label><input type="number" id="ep-sale-price" min="0" step="0.01" value="${p.sale_price ?? ""}" placeholder="0.00"></div>
+     </div>
      <div class="form-group"><label>Kuvaus</label><textarea id="ep-desc" rows="2">${escapeHtml(p.description || "")}</textarea></div>
      <div class="form-group"><label>Yksikkö</label><input id="ep-unit" value="${escapeHtml(p.unit)}"></div>
      <div class="form-group"><label>Minimivarasto</label><input type="number" id="ep-min" min="0" value="${p.min_stock_level}"></div>`,
@@ -994,6 +1016,8 @@ async function saveProductEdit(productId) {
         name,
         manufacturer: document.getElementById("ep-manufacturer").value.trim() || null,
         wholesaler: document.getElementById("ep-wholesaler").value.trim() || null,
+        purchase_price: parsePriceInput("ep-purchase-price"),
+        sale_price: parsePriceInput("ep-sale-price"),
         description: document.getElementById("ep-desc").value.trim() || null,
         unit: document.getElementById("ep-unit").value.trim() || "kpl",
         min_stock_level: parseInt(document.getElementById("ep-min").value, 10) || 0,
@@ -1015,6 +1039,10 @@ function openNewProductModal() {
      <div class="form-group"><label>Nimi *</label><input id="np-name"></div>
      <div class="form-group"><label>Valmistaja</label><input id="np-manufacturer" placeholder="Esim. FixPlus"></div>
      <div class="form-group"><label>Tukkuri</label><input id="np-wholesaler" placeholder="Esim. Rautakauppa Oy"></div>
+     <div class="form-row">
+       <div class="form-group"><label>Ostohinta (€)</label><input type="number" id="np-purchase-price" min="0" step="0.01" placeholder="0.00"></div>
+       <div class="form-group"><label>Myyntihinta (€)</label><input type="number" id="np-sale-price" min="0" step="0.01" placeholder="0.00"></div>
+     </div>
      <div class="form-group"><label>Kuvaus</label><textarea id="np-desc" rows="2"></textarea></div>
      <div class="form-group"><label>Alkusaldo</label><input type="number" id="np-qty" min="0" value="0"></div>
      <div class="form-group"><label>Minimivarasto</label><input type="number" id="np-min" min="0" value="0"></div>`,
@@ -1032,6 +1060,8 @@ async function saveProduct() {
         name: document.getElementById("np-name").value.trim(),
         manufacturer: document.getElementById("np-manufacturer").value.trim() || null,
         wholesaler: document.getElementById("np-wholesaler").value.trim() || null,
+        purchase_price: parsePriceInput("np-purchase-price"),
+        sale_price: parsePriceInput("np-sale-price"),
         description: document.getElementById("np-desc").value.trim() || null,
         quantity_on_hand: parseInt(document.getElementById("np-qty").value, 10) || 0,
         min_stock_level: parseInt(document.getElementById("np-min").value, 10) || 0,

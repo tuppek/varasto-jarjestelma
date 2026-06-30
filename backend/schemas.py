@@ -29,6 +29,8 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     manufacturer: Optional[str] = None
     wholesaler: Optional[str] = None
+    purchase_price: Optional[float] = None
+    sale_price: Optional[float] = None
     unit: str = "kpl"
     min_stock_level: int = 0
 
@@ -51,6 +53,8 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     manufacturer: Optional[str] = None
     wholesaler: Optional[str] = None
+    purchase_price: Optional[float] = None
+    sale_price: Optional[float] = None
     unit: Optional[str] = None
     min_stock_level: Optional[int] = None
 

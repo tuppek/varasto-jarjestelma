@@ -385,6 +385,19 @@ body {
   white-space: nowrap;
 }
 
+.product-card-prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.product-card-prices strong {
+  color: var(--text);
+}
+
 .product-card-stock {
   display: flex;
   flex-wrap: wrap;
@@ -859,6 +872,12 @@ tr:hover td {
 
 .form-group {
   margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 
 .form-group label {
