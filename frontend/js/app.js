@@ -53,6 +53,7 @@ let ordersSearchTimer = null;
 let ordersFulfillmentFilter = "";
 let ordersList = [];
 let customersSearchTimer = null;
+let productsSearchTimer = null;
 let activeCamera = null;
 let scanDebounceTimer = null;
 let scanProcessing = false;
@@ -435,19 +436,42 @@ async function renderInventory() {
 
 async function renderProducts() {
   products = await api("/products");
-  document.getElementById("products-table").innerHTML = products.length
-    ? products
-        .map(
-          (p) => `<tr class="clickable-row" onclick="openProductDetailModal(${p.id})" title="Näytä lisätiedot">
-            <td>${p.sku}</td>
-            <td>${p.name}</td>
-            <td>${p.unit}</td>
-            <td>${p.quantity_on_hand}</td>
-            <td>${p.min_stock_level}</td>
-          </tr>`
-        )
-        .join("")
-    : `<tr><td colspan="5" class="empty-state">Ei tuotteita. Luo uusi tai tuo Excelistä.</td></tr>`;
+  const q = document.getElementById("products-search")?.value.trim().toLowerCase() || "";
+  const filtered = products.filter((p) => {
+    if (!q) return true;
+    return [p.name, p.sku, p.manufacturer, p.wholesaler, p.description]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(q));
+  });
+
+  const container = document.getElementById("products-cards");
+  if (!container) return;
+
+  container.innerHTML = filtered.length
+    ? filtered.map((p) => renderProductCard(p)).join("")
+    : `<p class="empty-state">${products.length ? "Ei hakutuloksia" : "Ei tuotteita. Luo uusi tai tuo Excelistä."}</p>`;
+}
+
+function renderProductCard(p) {
+  const low = p.quantity_available <= p.min_stock_level;
+  const mfr = p.manufacturer ? escapeHtml(p.manufacturer) : "–";
+  const wholesaler = p.wholesaler ? escapeHtml(p.wholesaler) : "–";
+  return `<article class="product-card ${low ? "product-card--low" : ""}" onclick="openProductDetailModal(${p.id})" title="Näytä lisätiedot">
+    <div class="product-card-header">
+      <h4>${escapeHtml(p.name)}</h4>
+      <span class="badge ${low ? "low" : "ok"}">${low ? "Vähissä" : "OK"}</span>
+    </div>
+    <p class="product-card-sku"><code>${escapeHtml(p.sku)}</code> · ${escapeHtml(p.unit)}</p>
+    <dl class="product-card-meta">
+      <div><dt>Valmistaja</dt><dd>${mfr}</dd></div>
+      <div><dt>Tukkuri</dt><dd>${wholesaler}</dd></div>
+    </dl>
+    <div class="product-card-stock">
+      <span>Varastossa <strong>${p.quantity_on_hand}</strong></span>
+      <span>Vapaa <strong>${p.quantity_available}</strong></span>
+      <span>Minimi <strong>${p.min_stock_level}</strong></span>
+    </div>
+  </article>`;
 }
 
 function toInputDate(iso) {
@@ -1437,6 +1461,10 @@ document.getElementById("camera-toggle-btn").addEventListener("click", toggleSca
 document.getElementById("customers-search").addEventListener("input", () => {
   clearTimeout(customersSearchTimer);
   customersSearchTimer = setTimeout(renderCustomers, 300);
+});
+document.getElementById("products-search").addEventListener("input", () => {
+  clearTimeout(productsSearchTimer);
+  productsSearchTimer = setTimeout(renderProducts, 300);
 });
 document.getElementById("download-template-btn").addEventListener("click", (e) => {
   e.preventDefault();

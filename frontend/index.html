@@ -126,23 +126,13 @@
         <div class="panel">
           <div class="panel-header">
             <h3>Tuotteet</h3>
-            <button class="btn btn-primary" id="new-product-btn">+ Uusi tuote</button>
+            <div class="panel-header-actions">
+              <input type="search" id="products-search" placeholder="Hae nimellä, SKU:lla, valmistajalla..." class="search-input">
+              <button class="btn btn-primary" id="new-product-btn">+ Uusi tuote</button>
+            </div>
           </div>
-          <p class="hint panel-hint">Klikkaa tuotetta nähdäksesi valmistajan, tukkurin ja muut tiedot.</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Nimi</th>
-                  <th>Yksikkö</th>
-                  <th>Saldo</th>
-                  <th>Minimi</th>
-                </tr>
-              </thead>
-              <tbody id="products-table"></tbody>
-            </table>
-          </div>
+          <p class="hint panel-hint">Klikkaa tuotekorttia nähdäksesi lisätiedot ja muokata.</p>
+          <div id="products-cards" class="product-cards"></div>
         </div>
       </section>
 
