@@ -710,115 +710,88 @@ async function renderScan() {
   setupAutoScanInput(document.getElementById("scan-input"), handleScanSearch);
 }
 
-let customerSuggestTimer = null;
-let activeCustomerAutocomplete = null;
+let customerSearchTimer = null;
 
 function customerFieldHtml(prefix = "so") {
-  return `<div class="form-group customer-autocomplete">
-     <label for="${prefix}-customer">${t("common.customer")} *</label>
-     <input type="text" id="${prefix}-customer" autocomplete="off">
-     <div id="${prefix}-customer-suggest" class="customer-suggest hidden"></div>
-     <p class="hint">${t("orders.customerHint")}</p>
-   </div>`;
-}
-
-function selectCustomerSuggestion(customer, prefix = "so") {
-  const nameEl = document.getElementById(`${prefix}-customer`);
-  const phoneEl = document.getElementById(`${prefix}-phone`);
-  const idEl = document.getElementById(`${prefix}-customer-id`);
-  if (nameEl) nameEl.value = customer.name;
-  if (phoneEl) phoneEl.value = customer.phone;
-  if (idEl) idEl.value = customer.id;
-  hideCustomerSuggestions(prefix);
-}
-
-function hideCustomerSuggestions(prefix = "so") {
-  document.getElementById(`${prefix}-customer-suggest`)?.classList.add("hidden");
-}
-
-function renderCustomerSuggestions(items, prefix = "so") {
-  const box = document.getElementById(`${prefix}-customer-suggest`);
-  if (!box) return;
-  if (!items.length) {
-    box.classList.add("hidden");
-    box.innerHTML = "";
-    return;
-  }
-  box.innerHTML = items
-    .map(
-      (c) =>
-        `<button type="button" class="customer-suggest-item" data-id="${c.id}">
-          <span class="customer-suggest-name">${escapeHtml(c.name)}</span>
-          <span class="customer-suggest-meta">${escapeHtml(c.phone)}${c.email ? ` · ${escapeHtml(c.email)}` : ""}</span>
-        </button>`
-    )
-    .join("");
-  box.classList.remove("hidden");
-  box.querySelectorAll(".customer-suggest-item").forEach((btn) => {
-    btn.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      const customer = items.find((x) => x.id === parseInt(btn.dataset.id, 10));
-      if (customer) selectCustomerSuggestion(customer, prefix);
-    });
-  });
-}
-
-async function searchCustomerSuggestions(query, prefix = "so") {
-  const q = query.trim();
-  if (q.length < 2) {
-    hideCustomerSuggestions(prefix);
-    return;
-  }
-  try {
-    const results = await api(`/customers?q=${encodeURIComponent(q)}`);
-    renderCustomerSuggestions(results, prefix);
-  } catch (_) {
-    hideCustomerSuggestions(prefix);
-  }
+  return `<div class="form-group">
+    <label>${t("common.customer")} *</label>
+    <div class="autocomplete-wrap">
+      <input type="text" id="${prefix}-customer" autocomplete="off" placeholder="${t("orders.customerSearch")}">
+      <div id="${prefix}-customer-suggestions" class="autocomplete-list hidden"></div>
+    </div>
+    <input type="hidden" id="${prefix}-customer-id">
+  </div>`;
 }
 
 function setupCustomerAutocomplete(prefix = "so") {
-  if (activeCustomerAutocomplete?.cleanup) activeCustomerAutocomplete.cleanup();
-
   const input = document.getElementById(`${prefix}-customer`);
-  const suggest = document.getElementById(`${prefix}-customer-suggest`);
-  const hiddenId = document.getElementById(`${prefix}-customer-id`);
-  if (!input || !suggest) return;
+  const list = document.getElementById(`${prefix}-customer-suggestions`);
+  const idField = document.getElementById(`${prefix}-customer-id`);
+  const phoneField = document.getElementById(`${prefix}-phone`);
+  if (!input || !list) return;
 
-  const onInput = () => {
-    if (hiddenId) hiddenId.value = "";
-    clearTimeout(customerSuggestTimer);
-    customerSuggestTimer = setTimeout(() => searchCustomerSuggestions(input.value, prefix), 250);
+  const hide = () => list.classList.add("hidden");
+  const show = () => list.classList.remove("hidden");
+
+  const selectCustomer = (c) => {
+    input.value = c.name;
+    if (phoneField) phoneField.value = c.phone;
+    if (idField) idField.value = c.id;
+    hide();
   };
 
-  const onBlur = () => {
-    setTimeout(() => hideCustomerSuggestions(prefix), 150);
+  const renderSuggestions = (results) => {
+    if (!results.length) {
+      list.innerHTML = `<div class="autocomplete-empty">${t("orders.noCustomerMatches")}</div>`;
+      show();
+      return;
+    }
+    list.innerHTML = results
+      .map(
+        (c) =>
+          `<button type="button" class="autocomplete-item" data-id="${c.id}">
+            <strong>${escapeHtml(c.name)}</strong>
+            <span>${escapeHtml(c.phone)}</span>
+          </button>`
+      )
+      .join("");
+    list.querySelectorAll(".autocomplete-item").forEach((btn) => {
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const c = results.find((x) => x.id === parseInt(btn.dataset.id, 10));
+        if (c) selectCustomer(c);
+      });
+    });
+    show();
   };
 
-  const onFocus = () => {
-    if (input.value.trim().length >= 2) searchCustomerSuggestions(input.value, prefix);
+  const searchCustomers = async () => {
+    const q = input.value.trim();
+    if (q.length < 2) {
+      hide();
+      return;
+    }
+    try {
+      const results = await api(`/customers?q=${encodeURIComponent(q)}`);
+      renderSuggestions(results);
+    } catch (_) {
+      hide();
+    }
   };
 
-  input.addEventListener("input", onInput);
-  input.addEventListener("blur", onBlur);
-  input.addEventListener("focus", onFocus);
+  input.addEventListener("input", () => {
+    if (idField) idField.value = "";
+    clearTimeout(customerSearchTimer);
+    customerSearchTimer = setTimeout(searchCustomers, 250);
+  });
 
-  activeCustomerAutocomplete = {
-    cleanup() {
-      input.removeEventListener("input", onInput);
-      input.removeEventListener("blur", onBlur);
-      input.removeEventListener("focus", onFocus);
-      clearTimeout(customerSuggestTimer);
-    },
-  };
-}
+  input.addEventListener("focus", () => {
+    if (input.value.trim().length >= 2) searchCustomers();
+  });
 
-function fillCustomerFromSelect() {
-  const id = parseInt(document.getElementById("so-customer-select")?.value, 10);
-  if (!id) return;
-  const c = customers.find((x) => x.id === id);
-  if (!c) return;
-  selectCustomerSuggestion(c, "so");
+  input.addEventListener("blur", () => {
+    setTimeout(hide, 150);
+  });
 }
 
 async function openOrderTimeline(orderId) {
@@ -984,10 +957,6 @@ function openModal(title, bodyHtml, footerHtml) {
 
 function closeModal() {
   stopCamera();
-  if (activeCustomerAutocomplete?.cleanup) {
-    activeCustomerAutocomplete.cleanup();
-    activeCustomerAutocomplete = null;
-  }
   document.getElementById("modal").classList.add("hidden");
 }
 
@@ -1253,7 +1222,6 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
     t("modal.newOrder"),
     `${customerFieldHtml("so")}
      <div class="form-group"><label>${t("modal.phoneRequired")}</label><input id="so-phone" type="tel" placeholder="0401234567" required></div>
-     <input type="hidden" id="so-customer-id">
      <div class="form-group"><label>${t("common.notes")}</label><textarea id="so-notes" rows="2"></textarea></div>
      ${servicesPickerHtml("new")}
      <div class="form-group">
@@ -1391,9 +1359,8 @@ function openEditOrderModal(orderId) {
 
   openModal(
     `${t("common.edit")} ${order.order_number}`,
-    `${customerFieldHtml("edit")}
+    `<div class="form-group"><label>${t("common.customer")} *</label><input id="edit-customer" value="${order.customer}"></div>
      <div class="form-group"><label>${t("modal.phoneRequired")}</label><input id="edit-phone" type="tel" value="${order.customer_phone || ""}"></div>
-     <input type="hidden" id="edit-customer-id" value="${order.customer_id || ""}">
      <div class="form-group"><label>${t("common.notes")}</label><textarea id="edit-notes" rows="2">${order.notes || ""}</textarea></div>
      ${servicesPickerHtml("edit", order.services || [])}
      <p class="hint">${t("common.products")}: ${order.product_summary || "-"}</p>
@@ -1405,18 +1372,13 @@ function openEditOrderModal(orderId) {
     `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
      <button class="btn btn-primary" onclick="saveOrderEdit(${orderId})">${t("modal.saveChanges")}</button>`
   );
-  const editCustomerInput = document.getElementById("edit-customer");
-  if (editCustomerInput) editCustomerInput.value = order.customer;
   setupFulfillmentPicker(order.fulfillment_type || "toimitus", "edit");
-  setupCustomerAutocomplete("edit");
 }
 
 async function saveOrderEdit(orderId) {
   const customer = document.getElementById("edit-customer").value.trim();
   const phone = document.getElementById("edit-phone").value.trim();
   const scheduledDate = document.getElementById("edit-scheduled-date").value;
-  const customerIdRaw = document.getElementById("edit-customer-id")?.value;
-  const customerId = customerIdRaw ? parseInt(customerIdRaw, 10) : null;
   if (!customer || !phone || !scheduledDate) {
     showToast(t("toast.orderFieldsRequired"), "error");
     return;
@@ -1428,7 +1390,6 @@ async function saveOrderEdit(orderId) {
       method: "PATCH",
       body: JSON.stringify({
         customer,
-        customer_id: customerId,
         customer_phone: phone,
         notes: document.getElementById("edit-notes").value.trim() || null,
         fulfillment_type: fulfillment,
@@ -1714,7 +1675,6 @@ window.saveUnknownProduct = saveUnknownProduct;
 window.openEditOrderModal = openEditOrderModal;
 window.saveOrderEdit = saveOrderEdit;
 window.openOrderTimeline = openOrderTimeline;
-window.fillCustomerFromSelect = fillCustomerFromSelect;
 window.openEditCustomerModal = openEditCustomerModal;
 window.saveCustomer = saveCustomer;
 window.saveCustomerEdit = saveCustomerEdit;

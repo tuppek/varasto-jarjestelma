@@ -293,62 +293,6 @@ body {
   border-color: #3b82f6;
 }
 
-.customer-autocomplete {
-  position: relative;
-}
-
-.customer-suggest {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 2px);
-  z-index: 30;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.customer-suggest.hidden {
-  display: none;
-}
-
-.customer-suggest-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0.55rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  border-bottom: 1px solid var(--border);
-}
-
-.customer-suggest-item:last-child {
-  border-bottom: none;
-}
-
-.customer-suggest-item:hover,
-.customer-suggest-item.active {
-  background: var(--surface-2);
-}
-
-.customer-suggest-name {
-  display: block;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.customer-suggest-meta {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 0.1rem;
-}
-
 .login-screen {
   min-height: 100vh;
   display: flex;
@@ -1081,6 +1025,68 @@ tr:hover td {
 
 .form-group {
   margin-bottom: 1rem;
+}
+
+.autocomplete-wrap {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.autocomplete-list.hidden {
+  display: none;
+}
+
+.autocomplete-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item:focus {
+  background: var(--surface-2);
+}
+
+.autocomplete-item span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.autocomplete-empty {
+  padding: 0.65rem 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+[data-theme="dark"] .autocomplete-list {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .form-row {

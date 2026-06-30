@@ -376,22 +376,20 @@ def quick_create_product(payload: ProductQuickCreate, db: Session = Depends(get_
 def list_customers(q: Optional[str] = Query(None), db: Session = Depends(get_db)):
     query = db.query(Customer).order_by(Customer.name)
     if q:
-        words = [w.strip() for w in q.strip().split() if w.strip()]
-        if words:
-            for word in words:
-                term = f"%{word}%"
-                query = query.filter(
-                    or_(
-                        Customer.name.ilike(term),
-                        Customer.phone.ilike(term),
-                        Customer.email.ilike(term),
-                    )
-                )
-        else:
-            term = f"%{q.strip()}%"
+        term = q.strip()
+        words = [w for w in term.lower().split() if w]
+        if len(words) == 1:
+            pattern = f"%{words[0]}%"
             query = query.filter(
-                or_(Customer.name.ilike(term), Customer.phone.ilike(term), Customer.email.ilike(term))
+                or_(
+                    Customer.name.ilike(pattern),
+                    Customer.phone.ilike(pattern),
+                    Customer.email.ilike(pattern),
+                )
             )
+        elif words:
+            for word in words:
+                query = query.filter(Customer.name.ilike(f"%{word}%"))
     return [CustomerOut.model_validate(c) for c in query.limit(20).all()]
 
 
