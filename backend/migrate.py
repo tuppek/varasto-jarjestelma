@@ -48,3 +48,12 @@ def run_migrations() -> None:
                 conn.execute(text("ALTER TABLE products ADD COLUMN purchase_price REAL"))
             if "sale_price" not in cols:
                 conn.execute(text("ALTER TABLE products ADD COLUMN sale_price REAL"))
+
+        tables = inspect(engine).get_table_names()
+        if "sales_order_services" in tables:
+            conn.execute(
+                text(
+                    "UPDATE sales_order_services SET service_type = 'toimitus' "
+                    "WHERE service_type = 'kuljetus'"
+                )
+            )

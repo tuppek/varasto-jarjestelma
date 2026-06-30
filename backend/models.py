@@ -33,8 +33,9 @@ class FulfillmentType(str, enum.Enum):
 
 
 class ServiceType(str, enum.Enum):
-    KULJETUS = "kuljetus"
+    TOIMITUS = "toimitus"
     ASENNUS = "asennus"
+    NOUTO = "nouto"
 
 
 class Customer(Base):

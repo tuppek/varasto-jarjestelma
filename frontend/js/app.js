@@ -475,36 +475,43 @@ function toInputDate(iso) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
-function setupFulfillmentPicker(selected, prefix) {
-  document.querySelectorAll(`#${prefix}-fulfillment-options .fulfillment-option`).forEach((el) => {
-    el.addEventListener("click", () => {
-      document.querySelectorAll(`#${prefix}-fulfillment-options .fulfillment-option`).forEach((o) => o.classList.remove("selected"));
-      el.classList.add("selected");
-      el.querySelector("input").checked = true;
-      const isPickup = el.querySelector("input").value === "nouto";
-      document.getElementById(`${prefix}-date-label`).textContent = isPickup ? t("orders.pickupDate") : t("orders.deliveryDate");
+function setupServicePicker(prefix) {
+  document.querySelectorAll(`input[name="${prefix}-service"]`).forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.value === "nouto" && cb.checked) {
+        const delivery = document.querySelector(`input[name="${prefix}-service"][value="toimitus"]`);
+        if (delivery) delivery.checked = false;
+      }
+      if (cb.value === "toimitus" && cb.checked) {
+        const pickup = document.querySelector(`input[name="${prefix}-service"][value="nouto"]`);
+        if (pickup) pickup.checked = false;
+      }
+      updateOrderDateLabel(prefix);
     });
   });
-  const val = selected || "toimitus";
-  document.querySelectorAll(`#${prefix}-fulfillment-options .fulfillment-option`).forEach((el) => {
-    const match = el.querySelector("input").value === val;
-    el.classList.toggle("selected", match);
-    if (match) el.querySelector("input").checked = true;
-  });
-  document.getElementById(`${prefix}-date-label`).textContent = val === "nouto" ? t("orders.pickupDate") : t("orders.deliveryDate");
+  updateOrderDateLabel(prefix);
 }
 
-function fulfillmentPickerHtml(prefix, selected = "toimitus") {
-  return `<div class="fulfillment-options" id="${prefix}-fulfillment-options">
-    <label class="fulfillment-option ${selected === "toimitus" ? "selected" : ""}">
-      <input type="radio" name="${prefix}-fulfillment" value="toimitus" ${selected === "toimitus" ? "checked" : ""}>
-      <strong>${t("fulfillment.toimitus")}</strong><span>${t("fulfillment.toCustomer")}</span>
-    </label>
-    <label class="fulfillment-option ${selected === "nouto" ? "selected" : ""}">
-      <input type="radio" name="${prefix}-fulfillment" value="nouto" ${selected === "nouto" ? "checked" : ""}>
-      <strong>${t("fulfillment.nouto")}</strong><span>${t("fulfillment.fromWarehouse")}</span>
-    </label>
-  </div>`;
+function updateOrderDateLabel(prefix) {
+  const label = document.getElementById(`${prefix}-date-label`);
+  if (!label) return;
+  const isPickup = document.querySelector(`input[name="${prefix}-service"][value="nouto"]`)?.checked;
+  label.textContent = isPickup ? t("orders.pickupDate") : t("orders.deliveryDate");
+}
+
+function fulfillmentFromServices(services) {
+  return services.includes("nouto") ? "nouto" : "toimitus";
+}
+
+function normalizeOrderServices(order) {
+  const svcs = [...(order.services || [])].map((s) => (s === "kuljetus" ? "toimitus" : s));
+  if (order.fulfillment_type === "nouto" && !svcs.includes("nouto")) {
+    svcs.push("nouto");
+  }
+  if (!svcs.includes("toimitus") && !svcs.includes("nouto") && svcs.length === 0) {
+    svcs.push("toimitus");
+  }
+  return svcs;
 }
 
 function orderActionButtons(order) {
@@ -582,12 +589,13 @@ async function lookupProductBySku(sku) {
   return api(`/products/lookup?sku=${encodeURIComponent(sku.trim())}`);
 }
 
-function servicesPickerHtml(prefix, selected = []) {
-  const sel = new Set(selected);
+function servicesPickerHtml(prefix, selected = ["toimitus"]) {
+  const sel = new Set(Array.isArray(selected) ? selected : normalizeOrderServices(selected));
   return `<div class="form-group"><label>${t("common.services")}</label>
     <div class="service-checkboxes">
-      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="kuljetus" ${sel.has("kuljetus") ? "checked" : ""}> ${serviceLabel("kuljetus")}</label>
+      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="toimitus" ${sel.has("toimitus") ? "checked" : ""}> ${serviceLabel("toimitus")}</label>
       <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="asennus" ${sel.has("asennus") ? "checked" : ""}> ${serviceLabel("asennus")}</label>
+      <label class="checkbox-label"><input type="checkbox" name="${prefix}-service" value="nouto" ${sel.has("nouto") ? "checked" : ""}> ${serviceLabel("nouto")}</label>
     </div></div>`;
 }
 
@@ -1236,7 +1244,6 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
      <div class="form-group"><label>${t("modal.orderLines")}</label><div id="so-lines"></div>
      <button type="button" class="btn btn-secondary btn-sm" onclick="addLineRow('so-lines')">${t("modal.addLine")}</button></div>
      <hr style="border-color:var(--border);margin:1rem 0">
-     ${fulfillmentPickerHtml("new", "toimitus")}
      <div class="form-group">
        <label id="new-date-label">${t("orders.deliveryDate")}</label>
        <input type="date" id="so-scheduled-date" value="${tomorrow.toISOString().slice(0, 10)}" required>
@@ -1244,7 +1251,7 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
     `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
      <button class="btn btn-primary" onclick="saveSalesOrder()">${t("modal.saveOrder")}</button>`
   );
-  setupFulfillmentPicker("toimitus", "new");
+  setupServicePicker("new");
   setupCustomerAutocomplete("so");
   addLineRow("so-lines");
   if (preselectedProductId) {
@@ -1323,7 +1330,8 @@ async function saveSalesOrder() {
     showToast(t("toast.orderLineRequired"), "error");
     return;
   }
-  const fulfillment = document.querySelector('input[name="new-fulfillment"]:checked')?.value || "toimitus";
+  const services = getSelectedServices("new");
+  const fulfillment = fulfillmentFromServices(services);
   const scheduledDate = document.getElementById("so-scheduled-date").value;
   if (!scheduledDate) {
     showToast(t("toast.dateRequired"), "error");
@@ -1362,9 +1370,8 @@ function openEditOrderModal(orderId) {
     `<div class="form-group"><label>${t("common.customer")} *</label><input id="edit-customer" value="${order.customer}"></div>
      <div class="form-group"><label>${t("modal.phoneRequired")}</label><input id="edit-phone" type="tel" value="${order.customer_phone || ""}"></div>
      <div class="form-group"><label>${t("common.notes")}</label><textarea id="edit-notes" rows="2">${order.notes || ""}</textarea></div>
-     ${servicesPickerHtml("edit", order.services || [])}
+     ${servicesPickerHtml("edit", normalizeOrderServices(order))}
      <p class="hint">${t("common.products")}: ${order.product_summary || "-"}</p>
-     ${fulfillmentPickerHtml("edit", order.fulfillment_type || "toimitus")}
      <div class="form-group">
        <label id="edit-date-label">${t("orders.deliveryDate")}</label>
        <input type="date" id="edit-scheduled-date" value="${toInputDate(order.scheduled_date)}" required>
@@ -1372,7 +1379,7 @@ function openEditOrderModal(orderId) {
     `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
      <button class="btn btn-primary" onclick="saveOrderEdit(${orderId})">${t("modal.saveChanges")}</button>`
   );
-  setupFulfillmentPicker(order.fulfillment_type || "toimitus", "edit");
+  setupServicePicker("edit");
 }
 
 async function saveOrderEdit(orderId) {
@@ -1383,7 +1390,8 @@ async function saveOrderEdit(orderId) {
     showToast(t("toast.orderFieldsRequired"), "error");
     return;
   }
-  const fulfillment = document.querySelector('input[name="edit-fulfillment"]:checked')?.value || "toimitus";
+  const services = getSelectedServices("edit");
+  const fulfillment = fulfillmentFromServices(services);
 
   try {
     await api(`/sales-orders/${orderId}`, {
@@ -1394,7 +1402,7 @@ async function saveOrderEdit(orderId) {
         notes: document.getElementById("edit-notes").value.trim() || null,
         fulfillment_type: fulfillment,
         scheduled_date: scheduledDate,
-        services: getSelectedServices("edit"),
+        services,
       }),
     });
     closeModal();

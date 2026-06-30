@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from models import (
+    FulfillmentType,
     OrderStatusEvent,
     Product,
     PurchaseOrder,
@@ -17,19 +18,35 @@ from models import (
 )
 
 SERVICE_LABELS = {
-    "kuljetus": "Kuljetus",
+    "toimitus": "Toimitus",
     "asennus": "Asennus",
+    "nouto": "Nouto",
+    "kuljetus": "Toimitus",
 }
 
-ALLOWED_SERVICES = frozenset(SERVICE_LABELS.keys())
+ALLOWED_SERVICES = frozenset({"toimitus", "asennus", "nouto"})
+
+
+def _normalize_services(services: Optional[list[str]]) -> list[str]:
+    normalized: list[str] = []
+    for svc in services or []:
+        value = "toimitus" if svc == "kuljetus" else svc
+        if value in ALLOWED_SERVICES and value not in normalized:
+            normalized.append(value)
+    return normalized
+
+
+def _fulfillment_from_services(services: list[str]) -> FulfillmentType:
+    return FulfillmentType.NOUTO if "nouto" in services else FulfillmentType.TOIMITUS
 
 
 def _sync_order_services(db: Session, order: SalesOrder, services: list[str]) -> None:
+    normalized = _normalize_services(services)
+    order.fulfillment_type = _fulfillment_from_services(normalized)
     order.services.clear()
     db.flush()
-    for svc in services:
-        if svc in ALLOWED_SERVICES:
-            db.add(SalesOrderService(order_id=order.id, service_type=svc))
+    for svc in normalized:
+        db.add(SalesOrderService(order_id=order.id, service_type=svc))
 
 
 def _service_labels(order: SalesOrder) -> list[str]:
@@ -190,13 +207,15 @@ def create_sales_order(
     customer_id: Optional[int] = None,
     services: Optional[list] = None,
 ) -> SalesOrder:
+    normalized = _normalize_services(services)
+    fulfillment = _fulfillment_from_services(normalized) if normalized else fulfillment_type
     order = SalesOrder(
         order_number=_next_number(db, "TIL", SalesOrder),
         customer=customer,
         customer_id=customer_id,
         customer_phone=customer_phone,
         notes=notes,
-        fulfillment_type=fulfillment_type,
+        fulfillment_type=fulfillment,
         scheduled_date=scheduled_date,
         created_by_employee_id=created_by_employee_id,
         status=SalesOrderStatus.RECEIVED,
