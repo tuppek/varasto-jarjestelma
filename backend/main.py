@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from typing import Optional
 
@@ -38,6 +38,7 @@ from schemas import (
     ImportResult,
     LoginRequest,
     OrderSearchOut,
+    OrderLineIn,
     OrderTimelineEventOut,
     ProductCreate,
     ProductOut,
@@ -126,6 +127,70 @@ def seed_demo_products(db: Session) -> None:
     db.commit()
 
 
+def seed_demo_orders(db: Session) -> None:
+    if db.query(SalesOrder).count() > 0:
+        return
+    products = {p.sku: p for p in db.query(Product).all()}
+    customers = {c.phone: c for c in db.query(Customer).all()}
+    employee = db.query(Employee).first()
+    if not products or not customers or not employee:
+        return
+
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    demos = [
+        {
+            "customer_phone": "0401234567",
+            "services": ["toimitus", "asennus"],
+            "lines": [("SKU-001", 10)],
+            "days_offset": 2,
+            "approve": False,
+        },
+        {
+            "customer_phone": "0441112233",
+            "services": ["nouto"],
+            "lines": [("SKU-003", 1)],
+            "days_offset": 0,
+            "approve": False,
+        },
+        {
+            "customer_phone": "0509876543",
+            "services": ["toimitus"],
+            "lines": [("SKU-002", 5)],
+            "days_offset": 1,
+            "approve": True,
+        },
+    ]
+
+    for demo in demos:
+        customer = customers.get(demo["customer_phone"])
+        if not customer:
+            continue
+        lines = []
+        for sku, quantity in demo["lines"]:
+            product = products.get(sku)
+            if not product:
+                continue
+            lines.append(OrderLineIn(product_id=product.id, quantity=quantity))
+        if not lines:
+            continue
+        order = create_sales_order(
+            db,
+            customer.name,
+            customer.phone,
+            None,
+            lines,
+            FulfillmentType.TOIMITUS,
+            today + timedelta(days=demo["days_offset"]),
+            employee.id,
+            customer.id,
+            demo["services"],
+        )
+        if demo["approve"]:
+            approve_sales_order(db, order, employee.id)
+
+    db.commit()
+
+
 @app.on_event("startup")
 def startup() -> None:
     db = SessionLocal()
@@ -134,6 +199,7 @@ def startup() -> None:
         ensure_customers(db)
         if os.environ.get("AUTO_SEED", "0") == "1":
             seed_demo_products(db)
+        seed_demo_orders(db)
     finally:
         db.close()
 
@@ -768,10 +834,16 @@ def download_template():
 
 @app.post("/api/seed")
 def seed_demo_data(db: Session = Depends(get_db)):
-    if db.query(Product).count() > 0:
+    created = []
+    if db.query(Product).count() == 0:
+        seed_demo_products(db)
+        created.append("products")
+    if db.query(SalesOrder).count() == 0:
+        seed_demo_orders(db)
+        created.append("orders")
+    if not created:
         raise HTTPException(400, "Tietokannassa on jo dataa")
-    seed_demo_products(db)
-    return {"message": "Esimerkkidata luotu"}
+    return {"message": "Esimerkkidata luotu", "created": created}
 
 
 @app.get("/manifest.webmanifest")
