@@ -49,7 +49,6 @@
       <nav class="menu">
         <button class="menu-item active" data-view="dashboard" data-i18n="nav.dashboard">Etusivu</button>
         <button class="menu-item" data-view="inventory" data-i18n="nav.inventory">Saldo</button>
-        <button class="menu-item" data-view="products" data-i18n="nav.products">Tuotteet</button>
         <button class="menu-item" data-view="scan" data-i18n="nav.scan">Skannaus</button>
         <button class="menu-item" data-view="customers" data-i18n="nav.customers">Asiakkaat</button>
         <button class="menu-item" data-view="orders" data-i18n="nav.orders">Tilaukset</button>
@@ -105,7 +104,10 @@
         <div class="panel">
           <div class="panel-header">
             <h3 data-i18n="inventory.title">Varastosaldo</h3>
-            <input type="search" id="inventory-search" data-i18n-placeholder="inventory.search" placeholder="Hae tuotteita..." class="search-input">
+            <div class="panel-header-actions">
+              <input type="search" id="inventory-search" data-i18n-placeholder="products.search" placeholder="Hae nimellä, SKU:lla, valmistajalla..." class="search-input">
+              <button class="btn btn-primary" id="new-product-btn" data-i18n="products.new">+ Uusi tuote</button>
+            </div>
           </div>
           <p class="hint panel-hint" data-i18n="inventory.hint">Klikkaa riviä nähdäksesi tuotteen lisätiedot.</p>
           <div class="table-wrap">
@@ -125,20 +127,6 @@
               <tbody id="inventory-table"></tbody>
             </table>
           </div>
-        </div>
-      </section>
-
-      <section id="view-products" class="view">
-        <div class="panel">
-          <div class="panel-header">
-            <h3 data-i18n="nav.products">Tuotteet</h3>
-            <div class="panel-header-actions">
-              <input type="search" id="products-search" data-i18n-placeholder="products.search" placeholder="Hae nimellä, SKU:lla, valmistajalla..." class="search-input">
-              <button class="btn btn-primary" id="new-product-btn" data-i18n="products.new">+ Uusi tuote</button>
-            </div>
-          </div>
-          <p class="hint panel-hint" data-i18n="products.hint">Klikkaa tuotekorttia nähdäksesi lisätiedot ja muokata.</p>
-          <div id="products-cards" class="product-cards"></div>
         </div>
       </section>
 

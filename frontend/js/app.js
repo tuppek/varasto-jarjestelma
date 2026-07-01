@@ -47,7 +47,6 @@ let ordersSearchTimer = null;
 let ordersFulfillmentFilter = "";
 let ordersList = [];
 let customersSearchTimer = null;
-let productsSearchTimer = null;
 let activeCamera = null;
 let scanDebounceTimer = null;
 let scanProcessing = false;
@@ -348,7 +347,6 @@ async function loadView(view) {
   try {
     if (view === "dashboard") await renderDashboard();
     if (view === "inventory") await renderInventory();
-    if (view === "products") await renderProducts();
     if (view === "scan") await renderScan();
     if (view === "customers") await renderCustomers();
     if (view === "orders") await renderOrders();
@@ -402,10 +400,13 @@ async function renderDashboard() {
 
 async function renderInventory() {
   products = await api("/products");
-  const query = document.getElementById("inventory-search").value.toLowerCase();
-  const filtered = products.filter(
-    (p) => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)
-  );
+  const query = document.getElementById("inventory-search").value.trim().toLowerCase();
+  const filtered = products.filter((p) => {
+    if (!query) return true;
+    return [p.name, p.sku, p.manufacturer, p.wholesaler, p.description]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(query));
+  });
 
   document.getElementById("inventory-table").innerHTML = filtered.length
     ? filtered
@@ -423,51 +424,7 @@ async function renderInventory() {
           </tr>`;
         })
         .join("")
-    : `<tr><td colspan="8" class="empty-state">${t("inventory.empty")}</td></tr>`;
-}
-
-async function renderProducts() {
-  products = await api("/products");
-  const q = document.getElementById("products-search")?.value.trim().toLowerCase() || "";
-  const filtered = products.filter((p) => {
-    if (!q) return true;
-    return [p.name, p.sku, p.manufacturer, p.wholesaler, p.description]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(q));
-  });
-
-  const container = document.getElementById("products-cards");
-  if (!container) return;
-
-  container.innerHTML = filtered.length
-    ? filtered.map((p) => renderProductCard(p)).join("")
-    : `<p class="empty-state">${products.length ? t("products.noResults") : t("products.empty")}</p>`;
-}
-
-function renderProductCard(p) {
-  const low = p.quantity_available <= p.min_stock_level;
-  const mfr = p.manufacturer ? escapeHtml(p.manufacturer) : "–";
-  const wholesaler = p.wholesaler ? escapeHtml(p.wholesaler) : "–";
-  return `<article class="product-card ${low ? "product-card--low" : ""}" onclick="openProductDetailModal(${p.id})" title="${t("common.showDetails")}">
-    <div class="product-card-header">
-      <h4>${escapeHtml(p.name)}</h4>
-      <span class="badge ${low ? "low" : "ok"}">${stockBadgeLabel(low)}</span>
-    </div>
-    <p class="product-card-sku"><code>${escapeHtml(p.sku)}</code> · ${escapeHtml(p.unit)}</p>
-    <dl class="product-card-meta">
-      <div><dt>${t("common.manufacturer")}</dt><dd>${mfr}</dd></div>
-      <div><dt>${t("common.wholesaler")}</dt><dd>${wholesaler}</dd></div>
-    </dl>
-    <div class="product-card-prices">
-      <span>${t("common.purchase")} <strong>${formatPrice(p.purchase_price)}</strong></span>
-      <span>${t("common.sale")} <strong>${formatPrice(p.sale_price)}</strong></span>
-    </div>
-    <div class="product-card-stock">
-      <span>${t("common.onHand")} <strong>${p.quantity_on_hand}</strong></span>
-      <span>${t("common.available")} <strong>${p.quantity_available}</strong></span>
-      <span>${t("common.minimum")} <strong>${p.min_stock_level}</strong></span>
-    </div>
-  </article>`;
+    : `<tr><td colspan="8" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
 }
 
 function toInputDate(iso) {
@@ -1635,10 +1592,6 @@ document.getElementById("camera-toggle-btn").addEventListener("click", toggleSca
 document.getElementById("customers-search").addEventListener("input", () => {
   clearTimeout(customersSearchTimer);
   customersSearchTimer = setTimeout(renderCustomers, 300);
-});
-document.getElementById("products-search").addEventListener("input", () => {
-  clearTimeout(productsSearchTimer);
-  productsSearchTimer = setTimeout(renderProducts, 300);
 });
 document.getElementById("download-template-btn").addEventListener("click", (e) => {
   e.preventDefault();
