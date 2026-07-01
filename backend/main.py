@@ -262,6 +262,8 @@ def _purchase_out(order: PurchaseOrder) -> PurchaseOrderOut:
         status=order.status,
         notes=order.notes,
         created_at=order.created_at,
+        received_by_name=order.received_by.name if order.received_by else None,
+        received_at=order.received_at,
         lines=[
             PurchaseOrderLineOut(
                 id=line.id,
@@ -566,7 +568,10 @@ def search_orders(
 def list_purchase_orders(db: Session = Depends(get_db)):
     orders = (
         db.query(PurchaseOrder)
-        .options(joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product))
+        .options(
+            joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product),
+            joinedload(PurchaseOrder.received_by),
+        )
         .order_by(PurchaseOrder.created_at.desc())
         .all()
     )
@@ -581,7 +586,10 @@ def add_purchase_order(payload: PurchaseOrderCreate, db: Session = Depends(get_d
         db.refresh(order)
         order = (
             db.query(PurchaseOrder)
-            .options(joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product))
+            .options(
+                joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product),
+                joinedload(PurchaseOrder.received_by),
+            )
             .get(order.id)
         )
         return _purchase_out(order)
@@ -591,17 +599,20 @@ def add_purchase_order(payload: PurchaseOrderCreate, db: Session = Depends(get_d
 
 
 @app.post("/api/purchase-orders/{order_id}/receive", response_model=PurchaseOrderOut)
-def receive_order(order_id: int, payload: ReceivePurchaseOrder, db: Session = Depends(get_db)):
+def receive_order(order_id: int, payload: ReceivePurchaseOrder, request: Request, db: Session = Depends(get_db)):
     order = (
         db.query(PurchaseOrder)
-        .options(joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product))
+        .options(
+            joinedload(PurchaseOrder.lines).joinedload(PurchaseOrderLine.product),
+            joinedload(PurchaseOrder.received_by),
+        )
         .filter(PurchaseOrder.id == order_id)
         .first()
     )
     if not order:
         raise HTTPException(404, "Ostotilausta ei löydy")
     try:
-        receive_purchase_order(db, order, payload.lines)
+        receive_purchase_order(db, order, payload.lines, request.state.employee.id)
         db.commit()
         db.refresh(order)
         return _purchase_out(order)

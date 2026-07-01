@@ -945,11 +945,16 @@ async function renderPurchases() {
   container.innerHTML = purchaseOrders
     .map((order) => {
       const canReceive = ["tilattu", "osittain_vastaanotettu"].includes(order.status);
+      const receivedMeta =
+        order.status === "vastaanotettu" && order.received_by_name
+          ? `<div class="order-meta">${t("purchases.receivedBy", { name: escapeHtml(order.received_by_name), date: formatDate(order.received_at) })}</div>`
+          : "";
       return `<div class="order-card">
         <div class="order-card-header">
           <div>
             <h4>${order.order_number}</h4>
             <div class="order-meta">${order.supplier} · ${formatDate(order.created_at)}</div>
+            ${receivedMeta}
           </div>
           ${statusBadge(order.status)}
         </div>

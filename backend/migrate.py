@@ -51,6 +51,15 @@ def run_migrations() -> None:
             if "shelf_location" not in cols:
                 conn.execute(text("ALTER TABLE products ADD COLUMN shelf_location VARCHAR(64)"))
 
+        if "purchase_orders" in inspect(engine).get_table_names():
+            cols = _column_names(conn, "purchase_orders")
+            if "received_by_employee_id" not in cols:
+                conn.execute(
+                    text("ALTER TABLE purchase_orders ADD COLUMN received_by_employee_id INTEGER")
+                )
+            if "received_at" not in cols:
+                conn.execute(text("ALTER TABLE purchase_orders ADD COLUMN received_at DATETIME"))
+
         tables = inspect(engine).get_table_names()
         if "sales_order_services" in tables:
             conn.execute(

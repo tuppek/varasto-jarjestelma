@@ -167,7 +167,12 @@ def create_purchase_order(db: Session, supplier: str, notes: Optional[str], line
     return order
 
 
-def receive_purchase_order(db: Session, order: PurchaseOrder, receive_lines: list) -> PurchaseOrder:
+def receive_purchase_order(
+    db: Session,
+    order: PurchaseOrder,
+    receive_lines: list,
+    employee_id: Optional[int] = None,
+) -> PurchaseOrder:
     if order.status == PurchaseOrderStatus.CANCELLED:
         raise ValueError("Peruttuja tilauksia ei voi vastaanottaa")
 
@@ -203,6 +208,10 @@ def receive_purchase_order(db: Session, order: PurchaseOrder, receive_lines: lis
         order.status = PurchaseOrderStatus.RECEIVED
     else:
         order.status = PurchaseOrderStatus.PARTIALLY_RECEIVED
+
+    if received > 0:
+        order.received_by_employee_id = employee_id
+        order.received_at = datetime.utcnow()
 
     return order
 

@@ -107,6 +107,8 @@ class PurchaseOrderOut(BaseModel):
     status: PurchaseOrderStatus
     notes: Optional[str]
     created_at: datetime
+    received_by_name: Optional[str] = None
+    received_at: Optional[datetime] = None
     lines: List[PurchaseOrderLineOut]
 
     model_config = {"from_attributes": True}

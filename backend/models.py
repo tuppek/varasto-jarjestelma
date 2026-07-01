@@ -115,6 +115,10 @@ class PurchaseOrder(Base):
         Enum(PurchaseOrderStatus), default=PurchaseOrderStatus.DRAFT
     )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    received_by_employee_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("employees.id"), nullable=True
+    )
+    received_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -123,6 +127,7 @@ class PurchaseOrder(Base):
     lines: Mapped[List["PurchaseOrderLine"]] = relationship(
         back_populates="order", cascade="all, delete-orphan"
     )
+    received_by: Mapped[Optional["Employee"]] = relationship()
 
 
 class PurchaseOrderLine(Base):
