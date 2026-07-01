@@ -526,12 +526,12 @@ async function renderCustomers() {
   document.getElementById("customers-table").innerHTML = customers.length
     ? customers
         .map(
-          (c) => `<tr>
-            <td>${c.name}</td>
-            <td>${c.phone}</td>
-            <td>${c.email || "-"}</td>
-            <td>${c.address || "-"}</td>
-            <td><button class="btn btn-secondary btn-sm" onclick="openEditCustomerModal(${c.id})">${t("common.edit")}</button></td>
+          (c) => `<tr class="clickable-row" onclick="openCustomerDetailModal(${c.id})" title="${t("common.showDetails")}">
+            <td>${escapeHtml(c.name)}</td>
+            <td>${escapeHtml(c.phone)}</td>
+            <td>${c.email ? escapeHtml(c.email) : "-"}</td>
+            <td>${c.address ? escapeHtml(c.address) : "-"}</td>
+            <td onclick="event.stopPropagation()"><button class="btn btn-secondary btn-sm" onclick="openEditCustomerModal(${c.id})">${t("common.edit")}</button></td>
           </tr>`
         )
         .join("")
@@ -822,14 +822,56 @@ function openEditCustomerModal(id) {
   if (!c) return;
   openModal(
     t("modal.editCustomer", { name: c.name }),
-    `<div class="form-group"><label>${t("common.name")} *</label><input id="cu-name" value="${c.name}"></div>
-     <div class="form-group"><label>${t("common.phone")} *</label><input id="cu-phone" value="${c.phone}"></div>
-     <div class="form-group"><label>${t("common.email")}</label><input id="cu-email" value="${c.email || ""}"></div>
-     <div class="form-group"><label>${t("common.address")}</label><input id="cu-address" value="${c.address || ""}"></div>
-     <div class="form-group"><label>${t("common.notes")}</label><textarea id="cu-notes" rows="2">${c.notes || ""}</textarea></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.cancel")}</button>
+    `<div class="form-group"><label>${t("common.name")} *</label><input id="cu-name" value="${escapeHtml(c.name)}"></div>
+     <div class="form-group"><label>${t("common.phone")} *</label><input id="cu-phone" value="${escapeHtml(c.phone)}"></div>
+     <div class="form-group"><label>${t("common.email")}</label><input id="cu-email" value="${escapeHtml(c.email || "")}"></div>
+     <div class="form-group"><label>${t("common.address")}</label><input id="cu-address" value="${escapeHtml(c.address || "")}"></div>
+     <div class="form-group"><label>${t("common.notes")}</label><textarea id="cu-notes" rows="2">${escapeHtml(c.notes || "")}</textarea></div>`,
+    `<button class="btn btn-secondary" onclick="openCustomerDetailModal(${id})">${t("common.cancel")}</button>
      <button class="btn btn-primary" onclick="saveCustomerEdit(${id})">${t("common.save")}</button>`
   );
+}
+
+async function openCustomerDetailModal(customerId) {
+  try {
+    const data = await api(`/customers/${customerId}`);
+    const ordersHtml = data.orders.length
+      ? `<div class="customer-orders">${data.orders
+          .map(
+            (o) => `<div class="customer-order-item">
+              <div class="customer-order-header">
+                <span class="order-number">${escapeHtml(o.order_number)}</span>
+                ${statusBadge(o.status)}
+              </div>
+              <div class="order-meta">${formatDate(o.created_at)} · ${fulfillmentBadge(o.fulfillment_type)}${o.services_summary ? ` · ${escapeHtml(o.services_summary)}` : ""}</div>
+              <p class="customer-order-products">${escapeHtml(o.product_summary || "-")}</p>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openOrderTimeline(${o.id})">${t("orders.timeline")}</button>
+            </div>`
+          )
+          .join("")}</div>`
+      : `<p class="hint">${t("customers.noOrders")}</p>`;
+
+    openModal(
+      escapeHtml(data.name),
+      `<div class="customer-detail">
+        <dl class="detail-list">
+          <dt>${t("common.phone")}</dt><dd>${escapeHtml(data.phone)}</dd>
+          <dt>${t("common.email")}</dt><dd>${productDisplay(data.email)}</dd>
+          <dt>${t("common.address")}</dt><dd>${productDisplay(data.address)}</dd>
+          <dt>${t("common.notes")}</dt><dd>${productDisplay(data.notes)}</dd>
+          <dt>${t("customers.memberSince")}</dt><dd>${formatDate(data.created_at)}</dd>
+        </dl>
+        <hr style="border-color:var(--border);margin:1rem 0">
+        <h4 class="customer-history-title">${t("customers.history")}</h4>
+        ${ordersHtml}
+      </div>`,
+      `<button class="btn btn-secondary" onclick="closeModal()">${t("common.close")}</button>
+       <button class="btn btn-primary" onclick="openEditCustomerModal(${customerId})">${t("common.edit")}</button>
+       <button class="btn btn-secondary" onclick="openNewSalesModal(null, null, ${customerId}); closeModal();">${t("orders.new")}</button>`
+    );
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 }
 
 async function saveCustomerEdit(id) {
@@ -1177,7 +1219,7 @@ async function saveProduct() {
   }
 }
 
-async function openNewSalesModal(preselectedProductId, preselectedSku) {
+async function openNewSalesModal(preselectedProductId, preselectedSku, preselectedCustomerId) {
   await stopCamera();
   if (!products.length) products = await api("/products");
   if (!customers.length) customers = await api("/customers");
@@ -1211,6 +1253,16 @@ async function openNewSalesModal(preselectedProductId, preselectedSku) {
   setupServicePicker("new");
   setupCustomerAutocomplete("so");
   addLineRow("so-lines");
+  if (preselectedCustomerId) {
+    const c =
+      customers.find((x) => x.id === preselectedCustomerId) ||
+      (await api(`/customers/${preselectedCustomerId}`));
+    if (c) {
+      document.getElementById("so-customer").value = c.name;
+      document.getElementById("so-phone").value = c.phone;
+      document.getElementById("so-customer-id").value = c.id;
+    }
+  }
   if (preselectedProductId) {
     const row = document.querySelector("#so-lines .line-product");
     if (row) row.value = preselectedProductId;
@@ -1637,6 +1689,7 @@ window.openEditOrderModal = openEditOrderModal;
 window.saveOrderEdit = saveOrderEdit;
 window.openOrderTimeline = openOrderTimeline;
 window.openEditCustomerModal = openEditCustomerModal;
+window.openCustomerDetailModal = openCustomerDetailModal;
 window.saveCustomer = saveCustomer;
 window.saveCustomerEdit = saveCustomerEdit;
 

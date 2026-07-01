@@ -222,6 +222,10 @@ class OrderSearchOut(BaseModel):
     created_by_name: Optional[str] = None
 
 
+class CustomerDetailOut(CustomerOut):
+    orders: List[OrderSearchOut] = []
+
+
 class DeliverSalesLine(BaseModel):
     line_id: int
     quantity: int = Field(gt=0)

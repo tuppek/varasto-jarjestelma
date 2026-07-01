@@ -29,6 +29,7 @@ from models import (
 from schemas import (
     AuthResponse,
     CustomerCreate,
+    CustomerDetailOut,
     CustomerOut,
     CustomerUpdate,
     DashboardStats,
@@ -391,6 +392,29 @@ def list_customers(q: Optional[str] = Query(None), db: Session = Depends(get_db)
             for word in words:
                 query = query.filter(Customer.name.ilike(f"%{word}%"))
     return [CustomerOut.model_validate(c) for c in query.limit(20).all()]
+
+
+@app.get("/api/customers/{customer_id}", response_model=CustomerDetailOut)
+def get_customer(customer_id: int, db: Session = Depends(get_db)):
+    customer = db.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(404, "Asiakasta ei löydy")
+    orders = (
+        db.query(SalesOrder)
+        .options(*_sales_order_options())
+        .filter(
+            or_(
+                SalesOrder.customer_id == customer_id,
+                SalesOrder.customer_phone == customer.phone,
+            )
+        )
+        .order_by(SalesOrder.created_at.desc())
+        .all()
+    )
+    return CustomerDetailOut(
+        **CustomerOut.model_validate(customer).model_dump(),
+        orders=[_order_search_out(o) for o in orders],
+    )
 
 
 @app.post("/api/customers", response_model=CustomerOut, status_code=201)
