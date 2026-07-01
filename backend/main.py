@@ -98,10 +98,10 @@ DEMO_CUSTOMERS = [
 ]
 
 DEMO_PRODUCTS = [
-    {"sku": "SKU-001", "name": "Ruuvi M6", "description": "Teräsruuvi", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 0.15, "sale_price": 0.35, "quantity_on_hand": 100, "min_stock_level": 20},
-    {"sku": "SKU-002", "name": "Mutteri M6", "description": "Teräsmutteri", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 0.12, "sale_price": 0.29, "quantity_on_hand": 80, "min_stock_level": 15},
-    {"sku": "SKU-003", "name": "Kiinnike", "description": "Seinäkiinnike", "manufacturer": "BuildPro", "wholesaler": "Tukkuri Nord", "purchase_price": 2.50, "sale_price": 4.90, "quantity_on_hand": 25, "min_stock_level": 10},
-    {"sku": "SKU-004", "name": "Pulttisarja", "description": "10 kpl pultteja", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 3.20, "sale_price": 6.50, "quantity_on_hand": 45, "min_stock_level": 10},
+    {"sku": "SKU-001", "name": "Ruuvi M6", "description": "Teräsruuvi", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 0.15, "sale_price": 0.35, "quantity_on_hand": 100, "min_stock_level": 20, "shelf_location": "A-01"},
+    {"sku": "SKU-002", "name": "Mutteri M6", "description": "Teräsmutteri", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 0.12, "sale_price": 0.29, "quantity_on_hand": 80, "min_stock_level": 15, "shelf_location": "A-02"},
+    {"sku": "SKU-003", "name": "Kiinnike", "description": "Seinäkiinnike", "manufacturer": "BuildPro", "wholesaler": "Tukkuri Nord", "purchase_price": 2.50, "sale_price": 4.90, "quantity_on_hand": 25, "min_stock_level": 10, "shelf_location": "B-01"},
+    {"sku": "SKU-004", "name": "Pulttisarja", "description": "10 kpl pultteja", "manufacturer": "FixPlus", "wholesaler": "Rautakauppa Oy", "purchase_price": 3.20, "sale_price": 6.50, "quantity_on_hand": 45, "min_stock_level": 10, "shelf_location": "B-02"},
 ]
 
 
@@ -244,6 +244,7 @@ def _product_out(product: Product) -> ProductOut:
         sale_price=product.sale_price,
         unit=product.unit,
         min_stock_level=product.min_stock_level,
+        shelf_location=product.shelf_location,
         quantity_on_hand=product.quantity_on_hand,
         quantity_ordered=product.quantity_ordered,
         quantity_reserved=product.quantity_reserved,

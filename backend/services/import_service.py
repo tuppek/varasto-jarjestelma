@@ -21,6 +21,7 @@ PRODUCT_HEADERS = {
     "wholesaler": ["wholesaler", "tukkuri", "supplier", "toimittaja", "jakelija"],
     "purchase_price": ["purchase_price", "ostohinta", "osto_hinta", "ostohinta_eur"],
     "sale_price": ["sale_price", "myyntihinta", "myynti_hinta", "myyntihinta_eur", "hinta"],
+    "shelf_location": ["shelf_location", "hyllypaikka", "hylly", "paikka", "location", "shelf"],
 }
 
 
@@ -84,6 +85,7 @@ def import_products_from_excel(db: Session, file_bytes: bytes) -> dict:
                 "wholesaler",
                 "purchase_price",
                 "sale_price",
+                "shelf_location",
             ):
                 if field in col_map:
                     raw = row[col_map[field]]
@@ -129,11 +131,12 @@ def create_sample_template() -> bytes:
             "Tukkuri",
             "Ostohinta",
             "Myyntihinta",
+            "Hyllypaikka",
         ]
     )
-    ws.append(["SKU-001", "Ruuvi M6", "Teräsruuvi", "kpl", 100, 0, 0, 20, "FixPlus", "Rautakauppa Oy", 0.15, 0.35])
-    ws.append(["SKU-002", "Mutteri M6", "Teräsmutteri", "kpl", 80, 50, 10, 15, "FixPlus", "Rautakauppa Oy", 0.12, 0.29])
-    ws.append(["SKU-003", "Kiinnike", "Seinäkiinnike", "kpl", 25, 100, 5, 10, "BuildPro", "Tukkuri Nord", 2.5, 4.9])
+    ws.append(["SKU-001", "Ruuvi M6", "Teräsruuvi", "kpl", 100, 0, 0, 20, "FixPlus", "Rautakauppa Oy", 0.15, 0.35, "A-01"])
+    ws.append(["SKU-002", "Mutteri M6", "Teräsmutteri", "kpl", 80, 50, 10, 15, "FixPlus", "Rautakauppa Oy", 0.12, 0.29, "A-02"])
+    ws.append(["SKU-003", "Kiinnike", "Seinäkiinnike", "kpl", 25, 100, 5, 10, "BuildPro", "Tukkuri Nord", 2.5, 4.9, "B-01"])
 
     buffer = BytesIO()
     wb.save(buffer)

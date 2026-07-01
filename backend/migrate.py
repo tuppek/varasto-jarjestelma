@@ -48,6 +48,8 @@ def run_migrations() -> None:
                 conn.execute(text("ALTER TABLE products ADD COLUMN purchase_price REAL"))
             if "sale_price" not in cols:
                 conn.execute(text("ALTER TABLE products ADD COLUMN sale_price REAL"))
+            if "shelf_location" not in cols:
+                conn.execute(text("ALTER TABLE products ADD COLUMN shelf_location VARCHAR(64)"))
 
         tables = inspect(engine).get_table_names()
         if "sales_order_services" in tables:

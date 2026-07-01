@@ -410,7 +410,7 @@ async function renderInventory() {
   const query = document.getElementById("inventory-search").value.trim().toLowerCase();
   const filtered = products.filter((p) => {
     if (!query) return true;
-    return [p.name, p.sku, p.manufacturer, p.wholesaler, p.description]
+    return [p.name, p.sku, p.manufacturer, p.wholesaler, p.description, p.shelf_location]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(query));
   });
@@ -422,6 +422,7 @@ async function renderInventory() {
           return `<tr class="clickable-row" onclick="openProductDetailModal(${p.id})" title="${t("common.showDetails")}">
             <td>${p.sku}</td>
             <td>${p.name}</td>
+            <td>${p.shelf_location ? escapeHtml(p.shelf_location) : "-"}</td>
             <td><strong>${p.quantity_on_hand}</strong></td>
             <td>${p.quantity_ordered}</td>
             <td>${p.quantity_reserved}</td>
@@ -431,7 +432,7 @@ async function renderInventory() {
           </tr>`;
         })
         .join("")
-    : `<tr><td colspan="8" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
+    : `<tr><td colspan="9" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
 }
 
 function toInputDate(iso) {
@@ -1111,6 +1112,7 @@ function openProductDetailModal(productId) {
     `<div class="product-detail">
       <dl class="detail-list">
         <dt>${t("common.sku")}</dt><dd><code>${escapeHtml(p.sku)}</code></dd>
+        <dt>${t("common.shelfLocation")}</dt><dd>${productDisplay(p.shelf_location)}</dd>
         <dt>${t("common.manufacturer")}</dt><dd>${productDisplay(p.manufacturer)}</dd>
         <dt>${t("common.wholesaler")}</dt><dd>${productDisplay(p.wholesaler)}</dd>
         <dt>${t("common.purchasePrice")}</dt><dd>${formatPrice(p.purchase_price)}</dd>
@@ -1141,6 +1143,7 @@ function openEditProductModal(productId) {
     t("modal.editProduct", { name: escapeHtml(p.name) }),
     `<div class="form-group"><label>${t("common.sku")}</label><input value="${escapeHtml(p.sku)}" disabled></div>
      <div class="form-group"><label>${t("common.name")} *</label><input id="ep-name" value="${escapeHtml(p.name)}"></div>
+     <div class="form-group"><label>${t("common.shelfLocation")}</label><input id="ep-shelf" value="${escapeHtml(p.shelf_location || "")}" placeholder="esim. A-01"></div>
      <div class="form-group"><label>${t("common.manufacturer")}</label><input id="ep-manufacturer" value="${escapeHtml(p.manufacturer || "")}"></div>
      <div class="form-group"><label>${t("common.wholesaler")}</label><input id="ep-wholesaler" value="${escapeHtml(p.wholesaler || "")}"></div>
      <div class="form-row">
@@ -1166,6 +1169,7 @@ async function saveProductEdit(productId) {
       method: "PATCH",
       body: JSON.stringify({
         name,
+        shelf_location: document.getElementById("ep-shelf").value.trim() || null,
         manufacturer: document.getElementById("ep-manufacturer").value.trim() || null,
         wholesaler: document.getElementById("ep-wholesaler").value.trim() || null,
         purchase_price: parsePriceInput("ep-purchase-price"),
@@ -1189,6 +1193,7 @@ function openNewProductModal() {
     t("modal.newProduct"),
     `<div class="form-group"><label>${t("common.sku")} *</label><input id="np-sku"></div>
      <div class="form-group"><label>${t("common.name")} *</label><input id="np-name"></div>
+     <div class="form-group"><label>${t("common.shelfLocation")}</label><input id="np-shelf" placeholder="esim. A-01"></div>
      <div class="form-group"><label>${t("common.manufacturer")}</label><input id="np-manufacturer"></div>
      <div class="form-group"><label>${t("common.wholesaler")}</label><input id="np-wholesaler"></div>
      <div class="form-row">
@@ -1210,6 +1215,7 @@ async function saveProduct() {
       body: JSON.stringify({
         sku: document.getElementById("np-sku").value.trim(),
         name: document.getElementById("np-name").value.trim(),
+        shelf_location: document.getElementById("np-shelf").value.trim() || null,
         manufacturer: document.getElementById("np-manufacturer").value.trim() || null,
         wholesaler: document.getElementById("np-wholesaler").value.trim() || null,
         purchase_price: parsePriceInput("np-purchase-price"),

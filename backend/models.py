@@ -94,6 +94,7 @@ class Product(Base):
     quantity_ordered: Mapped[int] = mapped_column(Integer, default=0)
     quantity_reserved: Mapped[int] = mapped_column(Integer, default=0)
     min_stock_level: Mapped[int] = mapped_column(Integer, default=0)
+    shelf_location: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     purchase_lines: Mapped[List["PurchaseOrderLine"]] = relationship(back_populates="product")

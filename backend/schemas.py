@@ -33,6 +33,7 @@ class ProductBase(BaseModel):
     sale_price: Optional[float] = None
     unit: str = "kpl"
     min_stock_level: int = 0
+    shelf_location: Optional[str] = None
 
 
 class ProductCreate(ProductBase):
@@ -57,6 +58,7 @@ class ProductUpdate(BaseModel):
     sale_price: Optional[float] = None
     unit: Optional[str] = None
     min_stock_level: Optional[int] = None
+    shelf_location: Optional[str] = None
 
 
 class ProductOut(ProductBase):
