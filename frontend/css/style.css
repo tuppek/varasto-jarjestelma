@@ -63,6 +63,11 @@
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
@@ -131,6 +136,7 @@ body {
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
+  touch-action: manipulation;
 }
 
 .menu-item:hover {
@@ -363,6 +369,7 @@ body {
 
 .clickable-row {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .clickable-row:hover {
@@ -491,7 +498,7 @@ body {
   color: var(--text);
   border-radius: 6px;
   padding: 0.65rem 0.85rem;
-  font-size: 1rem;
+  font-size: 16px;
 }
 
 .scan-result {
@@ -757,6 +764,7 @@ body {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
+  touch-action: manipulation;
 }
 
 .tab:hover {
@@ -864,6 +872,7 @@ tr:hover td {
   cursor: pointer;
   font-weight: 600;
   transition: background 0.15s;
+  touch-action: manipulation;
 }
 
 .btn-primary {
@@ -911,6 +920,7 @@ tr:hover td {
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   min-width: 220px;
+  font-size: 16px;
 }
 
 .order-list {
@@ -1181,6 +1191,14 @@ tr:hover td {
   color: var(--text);
   border-radius: 8px;
   padding: 0.55rem 0.75rem;
+  font-size: 16px;
+}
+
+input,
+select,
+textarea,
+button {
+  touch-action: manipulation;
 }
 
 .line-row {
@@ -1189,6 +1207,11 @@ tr:hover td {
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: center;
+}
+
+.line-row input,
+.line-row select {
+  font-size: 16px;
 }
 
 .empty-state {

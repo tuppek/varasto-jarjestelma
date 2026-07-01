@@ -1,4 +1,4 @@
-const CACHE = "varasto-v19";
+const CACHE = "varasto-v20";
 const SHELL_PATHS = new Set([
   "/",
   "/static/css/style.css",

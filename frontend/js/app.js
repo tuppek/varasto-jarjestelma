@@ -261,7 +261,7 @@ let deferredInstallPrompt = null;
 
 function initPwa() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js?v=19").then((registration) => {
+    navigator.serviceWorker.register("/sw.js?v=20").then((registration) => {
       registration.addEventListener("updatefound", () => {
         const worker = registration.installing;
         if (!worker) return;
