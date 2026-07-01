@@ -27,6 +27,18 @@ SERVICE_LABELS = {
 ALLOWED_SERVICES = frozenset({"toimitus", "asennus", "nouto"})
 
 
+def product_unit_cost(product: Product) -> float:
+    if product.purchase_price is not None and product.purchase_price > 0:
+        return float(product.purchase_price)
+    if product.sale_price is not None and product.sale_price > 0:
+        return float(product.sale_price)
+    return 0.0
+
+
+def inventory_value(products: list[Product]) -> float:
+    return sum(p.quantity_on_hand * product_unit_cost(p) for p in products)
+
+
 def _normalize_services(services: Optional[list[str]]) -> list[str]:
     normalized: list[str] = []
     for svc in services or []:

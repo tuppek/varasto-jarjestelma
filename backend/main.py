@@ -67,6 +67,7 @@ from services.inventory import (
     create_purchase_order,
     create_sales_order,
     deliver_sales_order,
+    inventory_value,
     receive_purchase_order,
 )
 
@@ -392,9 +393,7 @@ def dashboard(db: Session = Depends(get_db)):
         total_on_hand=sum(p.quantity_on_hand for p in products),
         total_reserved=sum(p.quantity_reserved for p in products),
         total_ordered=sum(p.quantity_ordered for p in products),
-        total_inventory_value=sum(
-            p.quantity_on_hand * (p.purchase_price or 0) for p in products
-        ),
+        total_inventory_value=inventory_value(products),
     )
 
 

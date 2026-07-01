@@ -373,11 +373,28 @@ async function refreshAll() {
   if (currentView !== "orders" && currentView !== "customers") showToast(t("toast.dataUpdated"));
 }
 
+function productUnitCost(product) {
+  const purchase = Number(product.purchase_price);
+  const sale = Number(product.sale_price);
+  if (Number.isFinite(purchase) && purchase > 0) return purchase;
+  if (Number.isFinite(sale) && sale > 0) return sale;
+  return 0;
+}
+
+function calcInventoryValue(productList) {
+  return productList.reduce(
+    (sum, product) => sum + (product.quantity_on_hand || 0) * productUnitCost(product),
+    0
+  );
+}
+
 async function renderDashboard() {
-  const stats = await api("/dashboard");
+  const [stats, productList] = await Promise.all([api("/dashboard"), api("/products")]);
+  products = productList;
+  const inventoryTotal = calcInventoryValue(productList);
   document.getElementById("stats-grid").innerHTML = `
     <div class="stat-card"><div class="label">${t("dashboard.statProducts")}</div><div class="value">${stats.product_count}</div></div>
-    <div class="stat-card info"><div class="label">${t("dashboard.statValue")}</div><div class="value">${formatPrice(stats.total_inventory_value)}</div></div>
+    <div class="stat-card info"><div class="label">${t("dashboard.statValue")}</div><div class="value">${formatPrice(inventoryTotal)}</div></div>
     <div class="stat-card"><div class="label">${t("dashboard.statOrdered")}</div><div class="value">${stats.total_ordered}</div></div>
     <div class="stat-card warning"><div class="label">${t("dashboard.statReserved")}</div><div class="value">${stats.total_reserved}</div></div>
     <div class="stat-card warning"><div class="label">${t("dashboard.statLow")}</div><div class="value">${stats.low_stock_count}</div></div>
@@ -1092,8 +1109,13 @@ function productDisplay(value) {
 }
 
 function formatPrice(value) {
-  if (value == null || value === "") return "–";
-  return new Intl.NumberFormat(getLocale(), { style: "currency", currency: "EUR" }).format(value);
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "–";
+  try {
+    return new Intl.NumberFormat(getLocale(), { style: "currency", currency: "EUR" }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} €`;
+  }
 }
 
 function parsePriceInput(id) {
