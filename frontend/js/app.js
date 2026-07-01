@@ -46,6 +46,7 @@ let currentEmployee = JSON.parse(sessionStorage.getItem("currentEmployee") || "n
 let ordersSearchTimer = null;
 let ordersFulfillmentFilter = "";
 let ordersList = [];
+let movementsList = [];
 let customersSearchTimer = null;
 let activeCamera = null;
 let scanDebounceTimer = null;
@@ -971,11 +972,11 @@ async function renderPurchases() {
 }
 
 async function renderMovements() {
-  const movements = await api("/movements");
-  document.getElementById("movements-table").innerHTML = movements.length
-    ? movements
+  movementsList = await api("/movements");
+  document.getElementById("movements-table").innerHTML = movementsList.length
+    ? movementsList
         .map(
-          (m) => `<tr>
+          (m) => `<tr class="clickable-row" onclick="openMovementDetailModal(${m.id})" title="${t("common.showDetails")}">
             <td>${formatDate(m.created_at)}</td>
             <td>${m.product_name} (${m.product_sku})</td>
             <td>${movementLabel(m.movement_type)}</td>
@@ -986,6 +987,28 @@ async function renderMovements() {
         )
         .join("")
     : `<tr><td colspan="6" class="empty-state">${t("movements.empty")}</td></tr>`;
+}
+
+function openMovementDetailModal(movementId) {
+  const m = movementsList.find((x) => x.id === movementId);
+  if (!m) return;
+  const lineValue = m.unit_price != null ? Math.abs(m.quantity) * m.unit_price : null;
+  openModal(
+    movementLabel(m.movement_type),
+    `<div class="movement-detail">
+      <dl class="detail-list">
+        <dt>${t("common.time")}</dt><dd>${formatDate(m.created_at)}</dd>
+        <dt>${t("common.product")}</dt><dd>${escapeHtml(m.product_name || "-")} <code>${escapeHtml(m.product_sku || "")}</code></dd>
+        <dt>${t("common.quantity")}</dt><dd><strong>${m.quantity > 0 ? "+" : ""}${m.quantity}</strong></dd>
+        <dt>${t("common.reference")}</dt><dd>${productDisplay(m.reference)}</dd>
+        <dt>${t("common.notes")}</dt><dd>${productDisplay(m.notes)}</dd>
+        <dt>${t("movements.performedBy")}</dt><dd>${productDisplay(m.employee_name)}</dd>
+        <dt>${t("movements.unitPrice")}</dt><dd>${formatPrice(m.unit_price)}</dd>
+        <dt>${t("movements.totalValue")}</dt><dd>${lineValue != null ? formatPrice(lineValue) : "–"}</dd>
+      </dl>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">${t("common.close")}</button>`
+  );
 }
 
 function openModal(title, bodyHtml, footerHtml) {
@@ -1733,6 +1756,7 @@ window.saveOrderEdit = saveOrderEdit;
 window.openOrderTimeline = openOrderTimeline;
 window.openEditCustomerModal = openEditCustomerModal;
 window.openCustomerDetailModal = openCustomerDetailModal;
+window.openMovementDetailModal = openMovementDetailModal;
 window.saveCustomer = saveCustomer;
 window.saveCustomerEdit = saveCustomerEdit;
 

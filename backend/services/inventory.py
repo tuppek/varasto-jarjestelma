@@ -39,6 +39,17 @@ def inventory_value(products: list[Product]) -> float:
     return sum(p.quantity_on_hand * product_unit_cost(p) for p in products)
 
 
+def movement_unit_price(product: Product, movement_type: str) -> Optional[float]:
+    if movement_type == "toimitus":
+        if product.sale_price is not None and product.sale_price > 0:
+            return float(product.sale_price)
+    if product.purchase_price is not None and product.purchase_price > 0:
+        return float(product.purchase_price)
+    if product.sale_price is not None and product.sale_price > 0:
+        return float(product.sale_price)
+    return None
+
+
 def _normalize_services(services: Optional[list[str]]) -> list[str]:
     normalized: list[str] = []
     for svc in services or []:
@@ -106,6 +117,7 @@ def _log_movement(
     quantity: int,
     reference: Optional[str] = None,
     notes: Optional[str] = None,
+    employee_id: Optional[int] = None,
 ) -> None:
     db.add(
         StockMovement(
@@ -114,11 +126,13 @@ def _log_movement(
             quantity=quantity,
             reference=reference,
             notes=notes,
+            employee_id=employee_id,
+            unit_price=movement_unit_price(product, movement_type),
         )
     )
 
 
-def create_product(db: Session, data: dict) -> Product:
+def create_product(db: Session, data: dict, employee_id: Optional[int] = None) -> Product:
     product = Product(**data)
     db.add(product)
     db.flush()
@@ -129,11 +143,18 @@ def create_product(db: Session, data: dict) -> Product:
             "alkusaldo",
             product.quantity_on_hand,
             notes="Tuote luotu",
+            employee_id=employee_id,
         )
     return product
 
 
-def create_purchase_order(db: Session, supplier: str, notes: Optional[str], lines: list) -> PurchaseOrder:
+def create_purchase_order(
+    db: Session,
+    supplier: str,
+    notes: Optional[str],
+    lines: list,
+    employee_id: Optional[int] = None,
+) -> PurchaseOrder:
     order = PurchaseOrder(
         order_number=_next_number(db, "OT", PurchaseOrder),
         supplier=supplier,
@@ -162,6 +183,7 @@ def create_purchase_order(db: Session, supplier: str, notes: Optional[str], line
             line.quantity,
             reference=order.order_number,
             notes="Ostotilaus luotu",
+            employee_id=employee_id,
         )
 
     return order
@@ -198,6 +220,7 @@ def receive_purchase_order(
             item.quantity,
             reference=order.order_number,
             notes="Ostotilaus vastaanotettu",
+            employee_id=employee_id,
         )
 
     total = sum(line.quantity for line in order.lines)
@@ -290,6 +313,7 @@ def approve_sales_order(db: Session, order: SalesOrder, employee_id: Optional[in
             pending,
             reference=order.order_number,
             notes="Myyntitilaus hyväksytty",
+            employee_id=employee_id,
         )
 
     order.status = SalesOrderStatus.APPROVED
@@ -329,6 +353,7 @@ def deliver_sales_order(db: Session, order: SalesOrder, deliver_lines: list, emp
             -item.quantity,
             reference=order.order_number,
             notes="Tuote toimitettu",
+            employee_id=employee_id,
         )
 
     total = sum(line.quantity for line in order.lines)
@@ -361,6 +386,7 @@ def cancel_sales_order(db: Session, order: SalesOrder, employee_id: Optional[int
                     -release,
                     reference=order.order_number,
                     notes="Myyntitilaus peruttu",
+                    employee_id=employee_id,
                 )
 
     order.status = SalesOrderStatus.CANCELLED

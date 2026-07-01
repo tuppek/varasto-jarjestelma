@@ -249,6 +249,8 @@ class StockMovementOut(BaseModel):
     created_at: datetime
     product_sku: Optional[str] = None
     product_name: Optional[str] = None
+    employee_name: Optional[str] = None
+    unit_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

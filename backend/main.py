@@ -418,7 +418,7 @@ def lookup_product(sku: str = Query(..., min_length=1), db: Session = Depends(ge
 
 
 @app.post("/api/products/quick", response_model=ProductOut, status_code=201)
-def quick_create_product(payload: ProductQuickCreate, db: Session = Depends(get_db)):
+def quick_create_product(payload: ProductQuickCreate, request: Request, db: Session = Depends(get_db)):
     code = payload.sku.strip()
     existing = db.query(Product).filter(Product.sku.ilike(code)).first()
     if existing:
@@ -432,6 +432,7 @@ def quick_create_product(payload: ProductQuickCreate, db: Session = Depends(get_
                 "quantity_on_hand": payload.quantity_on_hand,
                 "unit": payload.unit,
             },
+            request.state.employee.id,
         )
         db.commit()
         db.refresh(product)
@@ -512,10 +513,10 @@ def list_products(db: Session = Depends(get_db)):
 
 
 @app.post("/api/products", response_model=ProductOut, status_code=201)
-def add_product(payload: ProductCreate, db: Session = Depends(get_db)):
+def add_product(payload: ProductCreate, request: Request, db: Session = Depends(get_db)):
     if db.query(Product).filter(Product.sku == payload.sku).first():
         raise HTTPException(400, "SKU on jo käytössä")
-    product = create_product(db, payload.model_dump())
+    product = create_product(db, payload.model_dump(), request.state.employee.id)
     db.commit()
     db.refresh(product)
     return _product_out(product)
@@ -579,9 +580,11 @@ def list_purchase_orders(db: Session = Depends(get_db)):
 
 
 @app.post("/api/purchase-orders", response_model=PurchaseOrderOut, status_code=201)
-def add_purchase_order(payload: PurchaseOrderCreate, db: Session = Depends(get_db)):
+def add_purchase_order(payload: PurchaseOrderCreate, request: Request, db: Session = Depends(get_db)):
     try:
-        order = create_purchase_order(db, payload.supplier, payload.notes, payload.lines)
+        order = create_purchase_order(
+            db, payload.supplier, payload.notes, payload.lines, request.state.employee.id
+        )
         db.commit()
         db.refresh(order)
         order = (
@@ -804,7 +807,7 @@ def order_timeline(order_id: int, db: Session = Depends(get_db)):
 def list_movements(db: Session = Depends(get_db)):
     movements = (
         db.query(StockMovement)
-        .options(joinedload(StockMovement.product))
+        .options(joinedload(StockMovement.product), joinedload(StockMovement.employee))
         .order_by(StockMovement.created_at.desc())
         .limit(200)
         .all()
@@ -820,6 +823,8 @@ def list_movements(db: Session = Depends(get_db)):
             created_at=m.created_at,
             product_sku=m.product.sku if m.product else None,
             product_name=m.product.name if m.product else None,
+            employee_name=m.employee.name if m.employee else None,
+            unit_price=m.unit_price,
         )
         for m in movements
     ]

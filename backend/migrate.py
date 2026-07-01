@@ -60,6 +60,13 @@ def run_migrations() -> None:
             if "received_at" not in cols:
                 conn.execute(text("ALTER TABLE purchase_orders ADD COLUMN received_at DATETIME"))
 
+        if "stock_movements" in inspect(engine).get_table_names():
+            cols = _column_names(conn, "stock_movements")
+            if "employee_id" not in cols:
+                conn.execute(text("ALTER TABLE stock_movements ADD COLUMN employee_id INTEGER"))
+            if "unit_price" not in cols:
+                conn.execute(text("ALTER TABLE stock_movements ADD COLUMN unit_price REAL"))
+
         tables = inspect(engine).get_table_names()
         if "sales_order_services" in tables:
             conn.execute(

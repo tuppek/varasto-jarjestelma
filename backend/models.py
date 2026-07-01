@@ -213,6 +213,9 @@ class StockMovement(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     reference: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    employee_id: Mapped[Optional[int]] = mapped_column(ForeignKey("employees.id"), nullable=True)
+    unit_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     product: Mapped["Product"] = relationship()
+    employee: Mapped[Optional["Employee"]] = relationship()
