@@ -440,6 +440,8 @@ async function renderInventory() {
             <td>${p.sku}</td>
             <td>${p.name}</td>
             <td>${p.shelf_location ? escapeHtml(p.shelf_location) : "-"}</td>
+            <td>${formatPrice(p.purchase_price)}</td>
+            <td>${formatPrice(p.sale_price)}</td>
             <td><strong>${p.quantity_on_hand}</strong></td>
             <td>${p.quantity_ordered}</td>
             <td>${p.quantity_reserved}</td>
@@ -449,7 +451,7 @@ async function renderInventory() {
           </tr>`;
         })
         .join("")
-    : `<tr><td colspan="9" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
+    : `<tr><td colspan="11" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
 }
 
 function toInputDate(iso) {
