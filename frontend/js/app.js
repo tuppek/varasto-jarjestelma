@@ -233,6 +233,13 @@ function fulfillmentBadge(type) {
   return `<span class="badge status">${fulfillmentLabel(type)}</span>`;
 }
 
+function orderServicesMeta(order) {
+  const summary = order.services_summary?.trim();
+  if (summary) return escapeHtml(summary);
+  if (order.fulfillment_type) return fulfillmentBadge(order.fulfillment_type);
+  return "";
+}
+
 function orderMeta(order) {
   const parts = [];
   if (order.fulfillment_type) {
@@ -837,17 +844,18 @@ async function openCustomerDetailModal(customerId) {
     const data = await api(`/customers/${customerId}`);
     const ordersHtml = data.orders.length
       ? `<div class="customer-orders">${data.orders
-          .map(
-            (o) => `<div class="customer-order-item">
+          .map((o) => {
+            const servicesMeta = orderServicesMeta(o);
+            return `<div class="customer-order-item">
               <div class="customer-order-header">
                 <span class="order-number">${escapeHtml(o.order_number)}</span>
                 ${statusBadge(o.status)}
               </div>
-              <div class="order-meta">${formatDate(o.created_at)} · ${fulfillmentBadge(o.fulfillment_type)}${o.services_summary ? ` · ${escapeHtml(o.services_summary)}` : ""}</div>
+              <div class="order-meta">${formatDate(o.created_at)}${servicesMeta ? ` · ${servicesMeta}` : ""}</div>
               <p class="customer-order-products">${escapeHtml(o.product_summary || "-")}</p>
               <button type="button" class="btn btn-secondary btn-sm" onclick="openOrderTimeline(${o.id})">${t("orders.timeline")}</button>
-            </div>`
-          )
+            </div>`;
+          })
           .join("")}</div>`
       : `<p class="hint">${t("customers.noOrders")}</p>`;
 
