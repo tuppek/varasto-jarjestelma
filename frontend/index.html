@@ -12,7 +12,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/static/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=19">
 </head>
 <body>
   <div id="login-screen" class="login-screen">
@@ -126,8 +126,8 @@
             </div>
           </div>
           <p class="hint panel-hint" data-i18n="inventory.hint">Klikkaa riviä nähdäksesi tuotteen lisätiedot.</p>
-          <div class="table-wrap">
-            <table>
+          <div class="table-wrap inventory-table-wrap">
+            <table class="inventory-table">
               <thead>
                 <tr>
                   <th data-i18n="common.sku">SKU</th>
@@ -281,7 +281,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="modal-title"></h3>
-        <button class="modal-close">&times;</button>
+        <button type="button" class="modal-close" aria-label="Sulje">&times;</button>
       </div>
       <div id="modal-body" class="modal-body"></div>
       <div id="modal-footer" class="modal-footer"></div>
@@ -289,7 +289,7 @@
   </div>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="/static/js/i18n.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/i18n.js?v=19"></script>
+  <script src="/static/js/app.js?v=19"></script>
 </body>
 </html>

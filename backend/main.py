@@ -211,6 +211,15 @@ def health():
 
 
 @app.middleware("http")
+async def cache_control_middleware(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path == "/sw.js" or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
+@app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
     if not path.startswith("/api/") or path == "/api/auth/login":
@@ -874,7 +883,11 @@ def web_manifest():
 def service_worker():
     sw_file = FRONTEND / "sw.js"
     if sw_file.exists():
-        return FileResponse(sw_file, media_type="application/javascript")
+        return FileResponse(
+            sw_file,
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
     raise HTTPException(404, "Service worker not found")
 
 
@@ -886,5 +899,8 @@ if FRONTEND.exists():
 def index():
     index_file = FRONTEND / "index.html"
     if index_file.exists():
-        return FileResponse(index_file)
+        return FileResponse(
+            index_file,
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
     return {"message": "Varastojärjestelmä API käynnissä"}

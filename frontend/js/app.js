@@ -261,7 +261,17 @@ let deferredInstallPrompt = null;
 
 function initPwa() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw.js?v=19").then((registration) => {
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "activated" && navigator.serviceWorker.controller) {
+            showToast(t("toast.appUpdated"));
+          }
+        });
+      });
+    }).catch(() => {});
   }
 
   const banner = document.getElementById("install-banner");
@@ -437,11 +447,11 @@ async function renderInventory() {
         .map((p) => {
           const low = p.quantity_available <= p.min_stock_level;
           return `<tr class="clickable-row" onclick="openProductDetailModal(${p.id})" title="${t("common.showDetails")}">
-            <td>${p.sku}</td>
-            <td>${p.name}</td>
+            <td>${escapeHtml(p.sku)}</td>
+            <td>${escapeHtml(p.name)}</td>
             <td>${p.shelf_location ? escapeHtml(p.shelf_location) : "-"}</td>
-            <td>${formatPrice(p.purchase_price)}</td>
-            <td>${formatPrice(p.sale_price)}</td>
+            <td>${formatPriceCell(p.purchase_price)}</td>
+            <td>${formatPriceCell(p.sale_price)}</td>
             <td><strong>${p.quantity_on_hand}</strong></td>
             <td>${p.quantity_available}</td>
             <td>${p.quantity_reserved}</td>
@@ -1012,6 +1022,7 @@ function openMovementDetailModal(movementId) {
 }
 
 function openModal(title, bodyHtml, footerHtml) {
+  void stopCamera();
   document.getElementById("modal-title").textContent = title;
   document.getElementById("modal-body").innerHTML = bodyHtml;
   document.getElementById("modal-footer").innerHTML = footerHtml;
@@ -1019,8 +1030,8 @@ function openModal(title, bodyHtml, footerHtml) {
 }
 
 function closeModal() {
-  stopCamera();
   document.getElementById("modal").classList.add("hidden");
+  void stopCamera();
 }
 
 async function loadSeedData() {
@@ -1146,6 +1157,12 @@ function formatPrice(value) {
   } catch {
     return `${amount.toFixed(2)} €`;
   }
+}
+
+function formatPriceCell(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '<span class="text-muted">–</span>';
+  return `<span class="price-cell">${formatPrice(amount)}</span>`;
 }
 
 function parsePriceInput(id) {
@@ -1715,8 +1732,16 @@ document.getElementById("download-template-btn").addEventListener("click", (e) =
   e.preventDefault();
   downloadTemplate();
 });
-document.querySelector(".modal-close").addEventListener("click", closeModal);
+document.querySelector(".modal-close").addEventListener("click", (e) => {
+  e.preventDefault();
+  closeModal();
+});
 document.querySelector(".modal-backdrop").addEventListener("click", closeModal);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("modal").classList.contains("hidden")) {
+    closeModal();
+  }
+});
 
 document.getElementById("import-file").addEventListener("change", (e) => {
   if (e.target.files[0]) handleImport(e.target.files[0]);

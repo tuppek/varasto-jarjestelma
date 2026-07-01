@@ -796,6 +796,26 @@ body {
 
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inventory-table {
+  min-width: 960px;
+}
+
+.inventory-table th,
+.inventory-table td {
+  white-space: nowrap;
+}
+
+.inventory-table td:nth-child(2) {
+  white-space: normal;
+  min-width: 8rem;
+  max-width: 14rem;
+}
+
+.inventory-table .price-cell {
+  font-variant-numeric: tabular-nums;
 }
 
 table {
@@ -1059,6 +1079,18 @@ tr:hover td {
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  color: var(--text);
+  background: var(--surface-2);
 }
 
 .form-group {
