@@ -443,9 +443,9 @@ async function renderInventory() {
             <td>${formatPrice(p.purchase_price)}</td>
             <td>${formatPrice(p.sale_price)}</td>
             <td><strong>${p.quantity_on_hand}</strong></td>
-            <td>${p.quantity_ordered}</td>
-            <td>${p.quantity_reserved}</td>
             <td>${p.quantity_available}</td>
+            <td>${p.quantity_reserved}</td>
+            <td>${p.quantity_ordered}</td>
             <td>${p.min_stock_level}</td>
             <td><span class="badge ${low ? "low" : "ok"}">${stockBadgeLabel(low)}</span></td>
           </tr>`;
