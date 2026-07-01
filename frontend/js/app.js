@@ -334,7 +334,7 @@ function logout(notify = true) {
 }
 
 function switchView(view) {
-  if (view !== "scan" && activeCamera?.readerId === "camera-reader") {
+  if (view !== "inventory" && activeCamera?.readerId === "camera-reader") {
     stopCamera();
   }
   currentView = view;
@@ -354,7 +354,6 @@ async function loadView(view) {
   try {
     if (view === "dashboard") await renderDashboard();
     if (view === "inventory") await renderInventory();
-    if (view === "scan") await renderScan();
     if (view === "customers") await renderCustomers();
     if (view === "orders") await renderOrders();
     if (view === "purchases") await renderPurchases();
@@ -452,6 +451,12 @@ async function renderInventory() {
         })
         .join("")
     : `<tr><td colspan="11" class="empty-state">${products.length ? t("products.noResults") : t("inventory.empty")}</td></tr>`;
+
+  initInventoryScan();
+}
+
+function initInventoryScan() {
+  setupAutoScanInput(document.getElementById("scan-input"), handleScanSearch);
 }
 
 function toInputDate(iso) {
@@ -695,11 +700,6 @@ async function handleScanSearch() {
     scanProcessing = false;
     input?.focus();
   }
-}
-
-async function renderScan() {
-  resetScanView();
-  setupAutoScanInput(document.getElementById("scan-input"), handleScanSearch);
 }
 
 let customerSearchTimer = null;

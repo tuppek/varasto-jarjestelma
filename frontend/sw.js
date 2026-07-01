@@ -1,4 +1,4 @@
-const CACHE = "varasto-v15";
+const CACHE = "varasto-v16";
 const ASSETS = [
   "/",
   "/static/css/style.css",

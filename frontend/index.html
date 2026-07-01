@@ -49,7 +49,6 @@
       <nav class="menu">
         <button class="menu-item active" data-view="dashboard" data-i18n="nav.dashboard">Etusivu</button>
         <button class="menu-item" data-view="inventory" data-i18n="nav.inventory">Saldo</button>
-        <button class="menu-item" data-view="scan" data-i18n="nav.scan">Skannaus</button>
         <button class="menu-item" data-view="customers" data-i18n="nav.customers">Asiakkaat</button>
         <button class="menu-item" data-view="orders" data-i18n="nav.orders">Tilaukset</button>
         <button class="menu-item" data-view="purchases" data-i18n="nav.purchases">Ostotilaukset</button>
@@ -101,6 +100,23 @@
       </section>
 
       <section id="view-inventory" class="view">
+        <div class="panel-grid inventory-scan-grid">
+          <div class="panel">
+            <h3 data-i18n="scan.barcodeTitle">Viivakoodihaku / SKU-skannaus</h3>
+            <p class="hint" data-i18n="scan.barcodeHint">Skannaa viivakoodi – haku käynnistyy automaattisesti. USB-skanneri tai kamera.</p>
+            <div class="scan-input-wrap">
+              <input type="text" id="scan-input" class="scan-input" data-i18n-placeholder="scan.placeholder" placeholder="Skannaa viivakoodi...">
+              <button type="button" class="btn btn-secondary" id="scan-cancel-btn" data-i18n="common.cancel">Peruuta</button>
+            </div>
+            <div id="scan-result" class="scan-result"></div>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="scan.cameraTitle">Kameraskannaus</h3>
+            <p class="hint" data-i18n="scan.cameraHint">Skannaa viivakoodi puhelimen tai tietokoneen kameralla.</p>
+            <div id="camera-reader" class="camera-reader"></div>
+            <button class="btn btn-secondary btn-sm" id="camera-toggle-btn" data-i18n="scan.startCamera">Käynnistä kamera</button>
+          </div>
+        </div>
         <div class="panel">
           <div class="panel-header">
             <h3 data-i18n="inventory.title">Varastosaldo</h3>
@@ -129,26 +145,6 @@
               </thead>
               <tbody id="inventory-table"></tbody>
             </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-scan" class="view">
-        <div class="panel-grid">
-          <div class="panel">
-            <h3 data-i18n="scan.barcodeTitle">Viivakoodihaku / SKU-skannaus</h3>
-            <p class="hint" data-i18n="scan.barcodeHint">Skannaa viivakoodi – haku käynnistyy automaattisesti. USB-skanneri tai kamera.</p>
-            <div class="scan-input-wrap">
-              <input type="text" id="scan-input" class="scan-input" data-i18n-placeholder="scan.placeholder" placeholder="Skannaa viivakoodi..." autofocus>
-              <button type="button" class="btn btn-secondary" id="scan-cancel-btn" data-i18n="common.cancel">Peruuta</button>
-            </div>
-            <div id="scan-result" class="scan-result"></div>
-          </div>
-          <div class="panel">
-            <h3 data-i18n="scan.cameraTitle">Kameraskannaus</h3>
-            <p class="hint" data-i18n="scan.cameraHint">Skannaa viivakoodi puhelimen tai tietokoneen kameralla.</p>
-            <div id="camera-reader" class="camera-reader"></div>
-            <button class="btn btn-secondary btn-sm" id="camera-toggle-btn" data-i18n="scan.startCamera">Käynnistä kamera</button>
           </div>
         </div>
       </section>
